@@ -86,8 +86,13 @@ func (s *SQLite) RenameTag(ctx context.Context, id int64, name string) error {
 		return err
 	}
 	if current != name {
+		// Read before mutating: a merge deletes the old tag and its links.
+		affectedIDs, err := tagBookmarkIDs(ctx, tx, id)
+		if err != nil {
+			return err
+		}
 		var targetID int64
-		err := tx.QueryRowContext(ctx, `SELECT id FROM tags WHERE name=?`, name).Scan(&targetID)
+		err = tx.QueryRowContext(ctx, `SELECT id FROM tags WHERE name=?`, name).Scan(&targetID)
 		switch {
 		case err == sql.ErrNoRows:
 			_, err = tx.ExecContext(ctx, `UPDATE tags SET name=? WHERE id=?`, name, id)
@@ -100,13 +105,52 @@ func (s *SQLite) RenameTag(ctx context.Context, id int64, name string) error {
 		if err != nil {
 			return err
 		}
+		for _, bid := range affectedIDs {
+			if err := s.reindex(ctx, tx, bid); err != nil {
+				return err
+			}
+		}
 	}
 	return tx.Commit()
 }
 
+func tagBookmarkIDs(ctx context.Context, tx *sql.Tx, tagID int64) ([]int64, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT bookmark_id FROM bookmark_tags WHERE tag_id=?`, tagID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
 func (s *SQLite) DeleteTag(ctx context.Context, id int64) error {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM tags WHERE id=?`, id)
-	return affected(res, err)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	ids, err := tagBookmarkIDs(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	res, err := tx.ExecContext(ctx, `DELETE FROM tags WHERE id=?`, id)
+	if err := affected(res, err); err != nil {
+		return err
+	}
+	for _, bid := range ids {
+		if err := s.reindex(ctx, tx, bid); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func affected(res sql.Result, err error) error {

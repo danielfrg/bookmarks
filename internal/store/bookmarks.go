@@ -8,12 +8,13 @@ import (
 	"github.com/danielfrg/bookmarks/internal/bookmarks"
 )
 
-const selectBookmark = `SELECT b.id,b.url,b.title,b.description,b.notes,b.unread,b.is_archived,
+const bookmarkColumns = `b.id,b.url,b.title,b.description,b.notes,b.unread,b.is_archived,
  b.favicon_file,b.preview_file,b.web_archive_url,b.date_added,b.date_modified,
  (SELECT COUNT(*) FROM archives a WHERE a.bookmark_id=b.id),
  (SELECT COUNT(*) FROM archives a WHERE a.bookmark_id=b.id AND a.source<>'server'),
- COALESCE((SELECT r.status FROM reader_texts r WHERE r.bookmark_id=b.id),'none')
- FROM bookmarks b`
+ COALESCE((SELECT r.status FROM reader_texts r WHERE r.bookmark_id=b.id),'none')`
+
+const selectBookmark = `SELECT ` + bookmarkColumns + ` FROM bookmarks b`
 
 func scanBookmark(row scanner) (bookmarks.Bookmark, error) {
 	var b bookmarks.Bookmark
@@ -85,6 +86,9 @@ func (s *SQLite) CreateBookmark(ctx context.Context, b *bookmarks.Bookmark) erro
 	if err := setBookmarkTags(ctx, tx, id, b.Tags); err != nil {
 		return err
 	}
+	if err := s.reindex(ctx, tx, id); err != nil {
+		return err
+	}
 	if err := tx.Commit(); err != nil {
 		return err
 	}
@@ -115,10 +119,24 @@ func (s *SQLite) UpdateBookmark(ctx context.Context, b bookmarks.Bookmark) error
 	if err := setBookmarkTags(ctx, tx, b.ID, b.Tags); err != nil {
 		return err
 	}
+	if err := s.reindex(ctx, tx, b.ID); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 
 func (s *SQLite) DeleteBookmark(ctx context.Context, id int64) error {
-	res, err := s.db.ExecContext(ctx, `DELETE FROM bookmarks WHERE id=?`, id)
-	return affected(res, err)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	res, err := tx.ExecContext(ctx, `DELETE FROM bookmarks WHERE id=?`, id)
+	if err := affected(res, err); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM bookmarks_fts WHERE rowid=?`, id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

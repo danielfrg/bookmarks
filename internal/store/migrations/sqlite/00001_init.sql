@@ -83,7 +83,12 @@ CREATE TABLE jobs (
 );
 CREATE INDEX idx_jobs_status_run_at ON jobs(status, run_at);
 
+-- Full-text index; rowid = bookmark id. Rows are written by the store's reindex
+-- (no triggers: tags and reader text live in other tables).
+CREATE VIRTUAL TABLE bookmarks_fts USING fts5(title, description, notes, url, tags, reader, tokenize='unicode61 remove_diacritics 2');
+
 -- +goose Down
+DROP TABLE bookmarks_fts;
 DROP TABLE jobs;
 DROP TABLE settings;
 DROP TABLE bundles;
