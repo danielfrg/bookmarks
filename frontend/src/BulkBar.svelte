@@ -9,7 +9,6 @@
     count: number;
     filter: Filter;
     busy: boolean;
-    message: string;
     error: string;
     /** False when "all matching" would make a delete match everything. */
     canDelete: boolean;
@@ -24,7 +23,6 @@
     count,
     filter,
     busy,
-    message,
     error,
     canDelete,
     suggestions,
@@ -65,7 +63,6 @@
 <div class="bulk-bar" role="region" aria-label="Bulk actions">
   <div class="bulk-row">
     <strong class="bulk-count" aria-live="polite">{count} selected</strong>
-    {#if message}<span class="bulk-msg" role="status">{message}</span>{/if}
     {#if error}<span class="bulk-err" role="alert">{error}</span>{/if}
     <span class="grow"></span>
     <Button size="sm" onclick={onexit} disabled={busy}>Done</Button>

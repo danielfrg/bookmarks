@@ -137,7 +137,9 @@ async function send(path: string, init: RequestInit = {}): Promise<Response> {
     const text = await response.text();
     try {
       const error = JSON.parse(text) as { detail?: string; errors?: { message?: string }[] };
-      message = error.detail || error.errors?.[0]?.message || message;
+      const first = error.errors?.[0]?.message;
+      message =
+        error.detail && first ? `${error.detail}: ${first}` : error.detail || first || message;
     } catch {
       if (text.trim()) message = text.trim();
     }

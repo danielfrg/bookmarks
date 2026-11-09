@@ -7,10 +7,11 @@
     view: View;
     tags: Tag[];
     bundles: Bundle[];
+    status: "loading" | "ready" | "error";
     open: boolean;
     ontag: (tag: string) => void;
   }
-  let { view, tags, bundles, open, ontag }: Props = $props();
+  let { view, tags, bundles, status, open, ontag }: Props = $props();
 
   const groups = $derived(groupTags(tags));
   const activeTags = $derived(activeTagsOf(view.q));
@@ -41,7 +42,11 @@
     {/each}
   </ul>
   <h4>TAGS</h4>
-  {#if groups.length === 0}
+  {#if status === "error"}
+    <p class="muted small" role="alert">Could not load tags and bundles.</p>
+  {:else if status === "loading" && groups.length === 0}
+    <p class="muted small">Loading…</p>
+  {:else if groups.length === 0}
     <p class="muted small">No tags yet.</p>
   {/if}
   {#each groups as g (g.letter)}

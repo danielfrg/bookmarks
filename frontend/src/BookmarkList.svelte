@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { tick, untrack } from "svelte";
   import { Button, EmptyState, Modal, Spinner } from "@kenn-io/kit-ui";
   import { api, type Bookmark, type BulkAction } from "./lib/api.ts";
   import { activeTagsOf, bulkRequest, displayTitle } from "./lib/query.ts";
+  import { shortcutFor } from "./lib/keys.ts";
   import { navigate, type View } from "./lib/view.ts";
   import BookmarkRow from "./BookmarkRow.svelte";
   import BulkBar from "./BulkBar.svelte";
@@ -16,6 +18,7 @@
     onreload: () => void;
     onchanged: () => void;
     ontag: (tag: string) => void;
+    onhelp: () => void;
     listKey: string;
     reloadKey: number;
     suggestions?: string[];
@@ -30,6 +33,7 @@
     onreload,
     onchanged,
     ontag,
+    onhelp,
     listKey,
     reloadKey,
     suggestions = [],
@@ -59,6 +63,78 @@
     allMatching = false;
     bulkError = "";
   });
+
+  // Drop selected ids that are no longer in the loaded rows (after a reload).
+  $effect(() => {
+    const ids = new Set(items.map((b) => b.id));
+    const cur = untrack(() => selected);
+    if ([...cur].some((id) => !ids.has(id)))
+      selected = new Set([...cur].filter((id) => ids.has(id)));
+  });
+
+  // Keyboard-highlighted row.
+  let activeId = $state<number | null>(null);
+  $effect(() => {
+    void listKey;
+    activeId = null;
+  });
+  $effect(() => {
+    if (activeId !== null && !items.some((b) => b.id === activeId)) activeId = null;
+  });
+  async function moveActive(step: 1 | -1) {
+    if (items.length === 0) return;
+    const i = items.findIndex((b) => b.id === activeId);
+    const n = items.length;
+    const next = i === -1 ? (step === 1 ? 0 : n - 1) : (i + step + n) % n;
+    activeId = items[next].id;
+    await tick();
+    document
+      .querySelector<HTMLElement>(`[data-bm="${activeId}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }
+  function onShortcut(e: KeyboardEvent) {
+    if (e.defaultPrevented) return;
+    const sc = shortcutFor(e);
+    if (!sc) return;
+    // Shortcuts are for the list with nothing modal open.
+    if (confirming || view.view !== null || view.edit !== null || view.create) return;
+    if (document.querySelector("[role=dialog]")) return;
+    const t = e.target as HTMLElement | null;
+    // Enter/arrows on a focused control keep their native meaning.
+    if (e.key === "Enter" && t?.closest("a, button")) return;
+    if (t?.closest("[role=combobox], [role=listbox], [role=menu]")) return;
+    const row = items.find((b) => b.id === activeId);
+    switch (sc) {
+      case "new":
+        navigate({ create: { url: "", title: "" } });
+        break;
+      case "search":
+        document.querySelector<HTMLInputElement>(".search-wrap input")?.focus();
+        break;
+      case "next":
+        void moveActive(1);
+        break;
+      case "prev":
+        void moveActive(-1);
+        break;
+      case "open":
+        if (!row) return;
+        window.open(row.url, "_blank", "noopener,noreferrer");
+        break;
+      case "view":
+        if (!row) return;
+        navigate({ view: row.id });
+        break;
+      case "edit":
+        if (!row) return;
+        navigate({ edit: row.id });
+        break;
+      case "help":
+        onhelp();
+        break;
+    }
+    e.preventDefault();
+  }
 
   const pageSelected = $derived(items.length > 0 && items.every((b) => selected.has(b.id)));
   const selectedCount = $derived(allMatching ? count : selected.size);
@@ -106,6 +182,7 @@
     }
   }
   function onWindowKeydown(e: KeyboardEvent) {
+    onShortcut(e);
     if (e.key !== "Escape" || !selectMode || panelOpen || e.defaultPrevented || bulkBusy) return;
     const t = e.target as HTMLElement | null;
     if (t?.closest("input, textarea, select, [role=dialog], [role=combobox]")) return;
@@ -125,6 +202,28 @@
   const first = $derived((view.page - 1) * pageSize + 1);
   const last = $derived(Math.min(count, (view.page - 1) * pageSize + items.length));
   const hasFilters = $derived(view.q !== "" || view.bundle !== null);
+  // Empty active list: is the whole library empty, or only archived? (one cheap request)
+  const maybeEmptyLibrary = $derived(
+    status === "ready" && count === 0 && !hasFilters && view.filter === "active",
+  );
+  let libraryEmpty = $state<boolean | null>(null);
+  $effect(() => {
+    void reloadKey;
+    if (!maybeEmptyLibrary) {
+      libraryEmpty = null;
+      return;
+    }
+    const ctrl = new AbortController();
+    api
+      .list({ scope: "all", limit: 1 }, ctrl.signal)
+      .then((res) => {
+        if (!ctrl.signal.aborted) libraryEmpty = res.count === 0;
+      })
+      .catch(() => {
+        if (!ctrl.signal.aborted) libraryEmpty = false;
+      });
+    return () => ctrl.abort();
+  });
 
   async function archive(b: Bookmark) {
     busyId = b.id;
@@ -177,7 +276,22 @@
     </EmptyState>
   {:else if status === "loading" && items.length === 0}
     <div class="center"><Spinner label="Loading bookmarks" /></div>
-  {:else if status === "ready" && count === 0 && !hasFilters && view.filter === "active"}
+  {:else if maybeEmptyLibrary && libraryEmpty === null}
+    <div class="center"><Spinner label="Loading bookmarks" /></div>
+  {:else if maybeEmptyLibrary && libraryEmpty === false}
+    <EmptyState
+      title="No active bookmarks"
+      description="Everything is archived. Switch to Archived to see it, or add a new link."
+    >
+      <Button
+        tone="info"
+        surface="solid"
+        onclick={() => navigate({ create: { url: "", title: "" } })}
+      >
+        Add bookmark
+      </Button>
+    </EmptyState>
+  {:else if maybeEmptyLibrary}
     <EmptyState title="No bookmarks yet" description="Save your first link to start your library.">
       <Button
         tone="info"
@@ -230,6 +344,7 @@
           busy={busyId === b.id}
           selecting={selectMode}
           selected={selected.has(b.id) || allMatching}
+          active={activeId === b.id}
           ontoggle={() => toggleRow(b.id)}
           {ontag}
           onview={() => navigate({ view: b.id })}
@@ -244,7 +359,11 @@
     </ul>
     <div class="pager">
       <span class="muted">Showing {first}–{last} of {count}</span>
-      <Button size="sm" onclick={() => (selectMode ? exitSelect() : (selectMode = true))}>
+      <Button
+        size="sm"
+        disabled={bulkBusy}
+        onclick={() => (selectMode ? exitSelect() : (selectMode = true))}
+      >
         {selectMode ? "Cancel select" : "Select"}
       </Button>
       <span class="grow"></span>
@@ -260,7 +379,6 @@
         count={selectedCount}
         filter={view.filter}
         busy={bulkBusy}
-        message={bulkMessage}
         error={bulkError}
         canDelete={canDeleteSelection}
         {suggestions}

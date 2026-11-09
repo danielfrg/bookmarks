@@ -16,8 +16,9 @@
     view: View;
     panelOpen: boolean;
     ontogglepanel: () => void;
+    onhelp: () => void;
   }
-  let { view, panelOpen, ontogglepanel }: Props = $props();
+  let { view, panelOpen, ontogglepanel, onhelp }: Props = $props();
 
   let text = $state("");
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -37,7 +38,9 @@
 
   function submit(value: string) {
     clearTimeout(timer);
-    if (value.trim() !== view.q) navigate({ q: value.trim(), page: 1 });
+    // Searching from another page (or the reader) goes to the list.
+    if (value.trim() !== view.q)
+      navigate({ q: value.trim(), page: 1, pageName: "list", read: null });
   }
   function onInput(value: string) {
     clearTimeout(timer);
@@ -55,6 +58,7 @@
     { value: "title_asc", label: "Title A–Z" },
     { value: "title_desc", label: "Title Z–A" },
   ];
+  const onList = $derived(view.pageName === "list" && view.read === null);
   const links = [
     { name: "tags", label: "Tags" },
     { name: "bundles", label: "Bundles" },
@@ -67,7 +71,8 @@
     <button
       class="wordmark"
       type="button"
-      onclick={() => navigate({ pageName: "list", q: "", filter: "active", bundle: null, page: 1 })}
+      onclick={() =>
+        navigate({ pageName: "list", read: null, q: "", filter: "active", bundle: null, page: 1 })}
     >
       Bookmarks
     </button>
@@ -96,24 +101,37 @@
     <ThemeToggle />
   </div>
   <div class="topbar-row controls">
-    <SegmentedControl
-      ariaLabel="Filter"
-      options={filters}
-      value={view.filter}
-      onchange={(v) => navigate({ filter: v as Filter, pageName: "list", page: 1 })}
-    />
-    <SelectDropdown
-      title="Sort"
-      options={sorts}
-      value={view.sort}
-      onchange={(v) => navigate({ sort: v, pageName: "list", page: 1 })}
-    />
+    {#if onList}
+      <SegmentedControl
+        ariaLabel="Filter"
+        options={filters}
+        value={view.filter}
+        onchange={(v) => navigate({ filter: v as Filter, pageName: "list", page: 1 })}
+      />
+      <SelectDropdown
+        title="Sort"
+        options={sorts}
+        value={view.sort}
+        onchange={(v) => navigate({ sort: v, pageName: "list", page: 1 })}
+      />
+    {/if}
     <span class="grow"></span>
-    <span class="panel-toggle">
-      <Button size="sm" ariaExpanded={panelOpen} onclick={ontogglepanel}>
-        <TagIcon size={14} /> Tags
-      </Button>
-    </span>
+    {#if onList}
+      <span class="panel-toggle">
+        <Button size="sm" ariaExpanded={panelOpen} onclick={ontogglepanel}>
+          <TagIcon size={14} /> Tags
+        </Button>
+      </span>
+    {/if}
+    <Button
+      size="sm"
+      class="help-trigger"
+      ariaLabel="Keyboard shortcuts"
+      title="Keyboard shortcuts (?)"
+      onclick={onhelp}
+    >
+      ?
+    </Button>
     <Button
       tone="info"
       surface="solid"

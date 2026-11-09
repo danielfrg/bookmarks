@@ -31,6 +31,33 @@ The server listens on `127.0.0.1:8080` and keeps its data (SQLite database,
 favicons, previews, archives) in `./data`. API docs are at `/_/api/docs` and the
 MCP endpoint is `/_/mcp`.
 
+## Using the web UI
+
+Open the server's root (`http://127.0.0.1:8080`). Search, filter, sort, page and
+open dialogs are all in the URL, so reloads and back/forward work.
+
+**Search syntax**
+
+| Query | Meaning |
+| --- | --- |
+| `#tag` | Has the tag |
+| `!unread` | Unread bookmarks |
+| `!untagged` | Bookmarks without tags |
+| `!basic` | Basic captures (no full archive) |
+| `"exact phrase"` | Phrase match |
+| `foo and bar`, `foo or bar`, `not foo` | Boolean operators |
+
+**Keyboard shortcuts** (on the list, with no dialog open; `?` shows them in the app)
+
+| Key | Action |
+| --- | --- |
+| `n` | Add a bookmark |
+| `s` or `/` | Focus search |
+| `j` / `k` or `↓` / `↑` | Move the highlighted row |
+| `Enter` or `o` | Open the highlighted link in a new tab |
+| `v` | View details |
+| `e` | Edit |
+
 ## Configuration
 
 All settings are environment variables.

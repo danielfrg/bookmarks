@@ -5,7 +5,7 @@
   import { api, ApiError, type Archive, type Bookmark, type ReaderPage } from "./lib/api.ts";
   import { displayTitle, hostOf } from "./lib/query.ts";
   import { READER_PAGE_CHARS, joinChunks } from "./lib/reader.ts";
-  import { navigate } from "./lib/view.ts";
+  import { navigate, readView, writeView } from "./lib/view.ts";
 
   interface Props {
     id: number;
@@ -16,6 +16,7 @@
   let loadError = $state("");
   let bm = $state<Bookmark | null>(null);
   let archives = $state<Archive[]>([]);
+  let archivesError = $state(false);
   let page = $state<ReaderPage | null>(null);
   let text = $state("");
   let more = $state(false);
@@ -37,14 +38,19 @@
     extractQueued = false;
     extractError = "";
     try {
+      let failed = false;
       const [b, a, r] = await Promise.all([
         api.get(id, signal),
-        api.archives(id).catch(() => [] as Archive[]),
+        api.archives(id).catch(() => {
+          failed = true;
+          return [] as Archive[];
+        }),
         api.reader(id, 0, READER_PAGE_CHARS),
       ]);
       if (signal.aborted) return;
       bm = b;
       archives = a;
+      archivesError = failed;
       page = r;
       text = r.markdown;
       nextOffset = r.next_offset;
@@ -129,6 +135,11 @@
     };
   });
 
+  // The list view (query, filter, page) the reader was opened from.
+  const backHref = $derived.by(() => {
+    const v = readView(new URL(window.location.href));
+    return window.location.pathname + writeView({ ...v, read: null });
+  });
   const back = (e: MouseEvent) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
@@ -138,7 +149,7 @@
 
 <main class="main reader-page" tabindex="-1" bind:this={root}>
   <div class="reader-col">
-    <a class="reader-back" href={window.location.pathname} onclick={back}>
+    <a class="reader-back" href={backHref} onclick={back}>
       <ArrowLeftIcon size={14} aria-hidden="true" /> Bookmarks
     </a>
 
@@ -198,8 +209,12 @@
             <p role="status">Re-extract queued</p>
             <Button onclick={() => attempt++}>Refresh</Button>
           {:else}
-            <Button onclick={reextract} disabled={busy || !archive}>Re-extract</Button>
-            {#if !archive}
+            <Button onclick={reextract} disabled={busy || (!archive && !archivesError)}
+              >Re-extract</Button
+            >
+            {#if archivesError}
+              <p class="muted">Could not check for an archive; Re-extract may still work.</p>
+            {:else if !archive}
               <p class="muted">Reader text is extracted from an archive; this bookmark has none.</p>
             {/if}
             {#if extractError}<p class="notice error" role="alert">{extractError}</p>{/if}

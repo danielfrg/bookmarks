@@ -9,6 +9,7 @@
     busy: boolean;
     selecting?: boolean;
     selected?: boolean;
+    active?: boolean;
     ontoggle?: () => void;
     ontag: (tag: string) => void;
     onview: () => void;
@@ -22,6 +23,7 @@
     busy,
     selecting = false,
     selected = false,
+    active = false,
     ontoggle,
     ontag,
     onview,
@@ -31,7 +33,13 @@
   }: Props = $props();
 </script>
 
-<li class="bm" class:selected>
+<li
+  class="bm"
+  class:selected
+  class:row-active={active}
+  aria-current={active ? "true" : undefined}
+  data-bm={b.id}
+>
   {#if selecting}
     <input
       type="checkbox"

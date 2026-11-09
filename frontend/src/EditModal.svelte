@@ -103,6 +103,7 @@
     api
       .get(id, ctrl.signal)
       .then((b) => {
+        if (ctrl.signal.aborted) return;
         orig = b;
         url = b.url;
         title = b.title;
@@ -248,7 +249,8 @@
       }
     } catch (e) {
       saveError = message(e);
-      // Inputs were disabled while saving, so focus was lost: return to the first field.
+      // Inputs are disabled while saving, so re-enable them before returning focus.
+      saving = false;
       await tick();
       document.getElementById(`${uid}-url`)?.focus();
     } finally {

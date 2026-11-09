@@ -38,6 +38,14 @@ test("requestJSON surfaces problem details", async () => {
       ),
       "url: is required",
     ],
+    [
+      json(
+        { detail: "validation failed", errors: [{ message: "expected string (url)" }] },
+        422,
+        "application/problem+json",
+      ),
+      "validation failed: expected string (url)",
+    ],
     [json({ detail: "invalid API token" }, 401), "invalid API token"],
     [
       new Response("X-Bookmarks header is required\n", { status: 403 }),

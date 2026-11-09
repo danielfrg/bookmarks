@@ -1,14 +1,26 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
-  import { api, type ListParams, type Bookmark, type Bundle, type Tag } from "./lib/api.ts";
+  import {
+    api,
+    ApiError,
+    type ListParams,
+    type Bookmark,
+    type Bundle,
+    type Settings,
+    type Tag,
+  } from "./lib/api.ts";
   import { toggleTagInQuery } from "./lib/query.ts";
   import { listParams, navigate, readView } from "./lib/view.ts";
   import DetailsModal from "./DetailsModal.svelte";
   import EditModal from "./EditModal.svelte";
   import ReaderPage from "./ReaderPage.svelte";
   import BookmarkList from "./BookmarkList.svelte";
+  import BundlesPage from "./BundlesPage.svelte";
+  import SettingsPage from "./SettingsPage.svelte";
+  import TagsPage from "./TagsPage.svelte";
   import SidePanel from "./SidePanel.svelte";
   import TopBar from "./TopBar.svelte";
+  import ShortcutsModal from "./ShortcutsModal.svelte";
 
   let view = $state(readView(new URL(window.location.href)));
   let pageSize = $state(30);
@@ -18,9 +30,34 @@
   let count = $state(0);
   let status = $state<"loading" | "ready" | "error">("loading");
   let error = $state("");
+  let notice = $state("");
   let reloadKey = $state(0);
   let panelOpen = $state(false);
+  let sideStatus = $state<"loading" | "ready" | "error">("loading");
   let settingsReady = $state(false);
+  let helpOpen = $state(false);
+  let helpTrigger: HTMLElement | null = null;
+
+  function openHelp() {
+    if (helpOpen) return;
+    const a = document.activeElement;
+    helpTrigger = a instanceof HTMLElement && a !== document.body ? a : null;
+    helpOpen = true;
+  }
+  async function closeHelp() {
+    helpOpen = false;
+    const t = helpTrigger;
+    helpTrigger = null;
+    await tick();
+    requestAnimationFrame(() => {
+      if (modalOpen(view)) return;
+      (t?.isConnected
+        ? t
+        : (document.querySelector<HTMLElement>(".list-area") ??
+          document.querySelector<HTMLElement>("main"))
+      )?.focus();
+    });
+  }
 
   let deletedId: number | null = null;
   const modalOpen = (v: typeof view) =>
@@ -79,15 +116,16 @@
       void keepFocusInDialog();
     }
   }
+  function applySettings(s: Settings) {
+    const n = s.ui.items_per_page;
+    if (typeof n === "number" && n > 0) pageSize = n;
+  }
   onMount(() => {
     window.addEventListener("viewchange", sync);
     window.addEventListener("popstate", sync);
     api
       .settings()
-      .then((s) => {
-        const n = s.ui.items_per_page;
-        if (typeof n === "number" && n > 0) pageSize = n;
-      })
+      .then(applySettings)
       .catch(() => {})
       .finally(() => (settingsReady = true));
     return () => {
@@ -99,8 +137,10 @@
   async function loadSide() {
     try {
       [tags, bundles] = await Promise.all([api.tags(), api.bundles()]);
+      sideStatus = "ready";
     } catch {
-      // The side panel is secondary; the list surfaces connection errors.
+      // The side panel is secondary, but say so rather than show an empty library.
+      sideStatus = "error";
     }
   }
   $effect(() => {
@@ -124,6 +164,7 @@
     api
       .list(params, ctrl.signal)
       .then((res) => {
+        if (ctrl.signal.aborted) return;
         if (res.results.length === 0 && res.count > 0 && view.page > 1) {
           // Deleted the last row of the last page: step back.
           navigate({ page: Math.max(1, Math.ceil(res.count / pageSize)) }, { replace: true });
@@ -132,10 +173,17 @@
         items = res.results;
         count = res.count;
         error = "";
+        notice = "";
         status = "ready";
       })
       .catch((e: unknown) => {
         if (ctrl.signal.aborted) return;
+        if (e instanceof ApiError && e.status === 404 && view.bundle) {
+          // The active bundle was deleted elsewhere: drop it and say so.
+          notice = "That bundle no longer exists.";
+          navigate({ bundle: null }, { replace: true });
+          return;
+        }
         error = e instanceof Error ? e.message : String(e);
         status = "error";
       });
@@ -148,14 +196,15 @@
   const onTag = (tag: string) => navigate({ q: toggleTagInQuery(view.q, tag), page: 1 });
 </script>
 
-<TopBar {view} {panelOpen} ontogglepanel={() => (panelOpen = !panelOpen)} />
+<TopBar {view} {panelOpen} ontogglepanel={() => (panelOpen = !panelOpen)} onhelp={openHelp} />
 {#if view.read !== null}
   {#key view.read}
     <ReaderPage id={view.read} />
   {/key}
 {:else if view.pageName === "list"}
   <div class="layout">
-    <main class="main">
+    <main class="main" tabindex="-1">
+      {#if notice}<p class="notice" role="status">{notice}</p>{/if}
       <BookmarkList
         {listKey}
         {reloadKey}
@@ -168,16 +217,18 @@
         onreload={reload}
         onchanged={reload}
         ontag={onTag}
+        onhelp={openHelp}
         suggestions={tags.map((t) => t.name)}
       />
     </main>
-    <SidePanel {view} {tags} {bundles} open={panelOpen} ontag={onTag} />
+    <SidePanel {view} {tags} {bundles} status={sideStatus} open={panelOpen} ontag={onTag} />
   </div>
+{:else if view.pageName === "tags"}
+  <TagsPage onchanged={reload} />
+{:else if view.pageName === "bundles"}
+  <BundlesPage onchanged={reload} />
 {:else}
-  <main class="main placeholder-page">
-    <h2>{view.pageName[0].toUpperCase() + view.pageName.slice(1)}</h2>
-    <p class="muted">Coming soon.</p>
-  </main>
+  <SettingsPage onsettings={applySettings} onchanged={reload} />
 {/if}
 
 {#if view.view !== null}
@@ -197,4 +248,8 @@
   {#key view.edit}
     <EditModal mode="edit" id={view.edit} onchanged={reload} />
   {/key}
+{/if}
+
+{#if helpOpen}
+  <ShortcutsModal onclose={closeHelp} />
 {/if}

@@ -99,7 +99,7 @@ export function bulkRequest(
   action: BulkAction,
   tags?: string[],
 ): BulkRequest | null {
-  const req: BulkRequest = { action };
+  const req: BulkRequest = sel.allMatching ? { action } : { ids: sel.ids, action };
   if (sel.allMatching) {
     if (v.bundle !== null) return null;
     if (action === "delete" && !v.q.trim() && v.filter !== "unread") return null;
@@ -108,10 +108,7 @@ export function bulkRequest(
       scope: v.filter === "archived" ? "archived" : "active",
       ...(v.filter === "unread" ? { unread: "yes" } : {}),
     };
-  } else {
-    req.ids = sel.ids;
   }
   if (tags) req.tags = tags;
-  // Stable key order: selection first.
-  return req.ids ? { ids: req.ids, action, ...(tags ? { tags } : {}) } : req;
+  return req;
 }
