@@ -118,6 +118,7 @@
       tone="info"
       surface="solid"
       size="sm"
+      class="add-trigger"
       onclick={() => navigate({ create: { url: "", title: "" } })}
     >
       <PlusIcon size={14} /> Add

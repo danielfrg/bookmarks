@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   activeTagsOf,
+  bulkRequest,
+  commitTagText,
   syncSearchText,
   displayTitle,
   formatBytes,
@@ -78,4 +80,73 @@ test("formatBytes uses base 1024 with one decimal from KB up", () => {
   assert.equal(formatBytes(-5), "0 B");
   assert.equal(formatBytes(1048575), "1.0 MB");
   assert.equal(formatBytes(1048575 - 1024), "1023.0 KB");
+});
+
+test("commitTagText splits, lower-cases and dedupes", () => {
+  assert.deepEqual(commitTagText([], "Go"), ["go"]);
+  assert.deepEqual(commitTagText(["go"], "rust, Go  web"), ["go", "rust", "web"]);
+  assert.deepEqual(commitTagText(["a"], "b,b c"), ["a", "b", "c"]);
+  assert.deepEqual(commitTagText(["a"], "  ,, "), ["a"]);
+  assert.deepEqual(commitTagText(["a"], "#Tag"), ["a", "tag"]);
+  const cur = ["a"];
+  commitTagText(cur, "b");
+  assert.deepEqual(cur, ["a"]);
+});
+
+const baseView = {
+  q: "",
+  filter: "active",
+  sort: "added_desc",
+  bundle: null,
+  page: 1,
+  view: null,
+  edit: null,
+  create: null,
+  read: null,
+  pageName: null,
+} as unknown as import("./view.ts").View;
+
+test("bulkRequest sends ids for an explicit selection", () => {
+  assert.deepEqual(bulkRequest({ ids: [3, 1], allMatching: false }, baseView, "archive"), {
+    ids: [3, 1],
+    action: "archive",
+  });
+  assert.deepEqual(bulkRequest({ ids: [2], allMatching: false }, baseView, "tag", ["go"]), {
+    ids: [2],
+    action: "tag",
+    tags: ["go"],
+  });
+});
+
+test("bulkRequest sends the current search for all matching", () => {
+  assert.deepEqual(bulkRequest({ ids: [], allMatching: true }, { ...baseView, q: "#go" }, "read"), {
+    query: { q: "#go", scope: "active" },
+    action: "read",
+  });
+  assert.deepEqual(
+    bulkRequest({ ids: [], allMatching: true }, { ...baseView, filter: "unread" }, "archive"),
+    { query: { q: "", scope: "active", unread: "yes" }, action: "archive" },
+  );
+  assert.deepEqual(
+    bulkRequest({ ids: [], allMatching: true }, { ...baseView, filter: "archived" }, "unarchive"),
+    { query: { q: "", scope: "archived" }, action: "unarchive" },
+  );
+});
+
+test("bulk delete all matching is disabled without a filter", () => {
+  const sel = { ids: [], allMatching: true };
+  assert.equal(bulkRequest(sel, baseView, "delete"), null);
+  assert.equal(bulkRequest(sel, { ...baseView, q: "  " }, "delete"), null);
+  assert.equal(bulkRequest(sel, { ...baseView, filter: "archived" }, "delete"), null);
+  assert.notEqual(bulkRequest(sel, { ...baseView, q: "foo" }, "delete"), null);
+  assert.notEqual(bulkRequest(sel, { ...baseView, filter: "unread" }, "delete"), null);
+  // Explicit ids may always be deleted.
+  assert.notEqual(bulkRequest({ ids: [1], allMatching: false }, baseView, "delete"), null);
+});
+
+test("bulkRequest refuses all matching inside a bundle", () => {
+  assert.equal(
+    bulkRequest({ ids: [], allMatching: true }, { ...baseView, bundle: 4 }, "read"),
+    null,
+  );
 });

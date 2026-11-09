@@ -4,6 +4,8 @@
   import { toggleTagInQuery } from "./lib/query.ts";
   import { listParams, navigate, readView } from "./lib/view.ts";
   import DetailsModal from "./DetailsModal.svelte";
+  import EditModal from "./EditModal.svelte";
+  import ReaderPage from "./ReaderPage.svelte";
   import BookmarkList from "./BookmarkList.svelte";
   import SidePanel from "./SidePanel.svelte";
   import TopBar from "./TopBar.svelte";
@@ -21,16 +23,17 @@
   let settingsReady = $state(false);
 
   let deletedId: number | null = null;
-  // After the details modal closes (Esc, backdrop, Close, Back), focus the row
-  // that opened it; after a delete the row is going away, so use the list.
-  async function restoreFocus(id: number) {
-    const deleted = deletedId === id;
-    deletedId = null;
+  const modalOpen = (v: typeof view) =>
+    v.view !== null || v.edit !== null || v.read !== null || !!v.create;
+  // After a modal closes (Esc, backdrop, Close, Back), focus the control that
+  // opened it: the row's View/Edit button or the + Add button. After a delete
+  // the row is going away, so use the list.
+  async function restoreFocus(selector: string | null, deleted = false) {
     await tick();
     requestAnimationFrame(() => {
-      if (view.view !== null) return;
+      if (modalOpen(view)) return;
       const target =
-        (deleted ? null : document.querySelector<HTMLElement>(`[data-view-trigger="${id}"]`)) ??
+        (deleted || !selector ? null : document.querySelector<HTMLElement>(selector)) ??
         document.querySelector<HTMLElement>(".list-area");
       target?.focus();
     });
@@ -48,17 +51,31 @@
     });
   }
   function sync() {
-    const prev = view.view;
+    const prev = view;
     view = readView(new URL(window.location.href));
-    if (
-      prev !== null &&
-      view.view === null &&
-      view.edit === null &&
-      view.read === null &&
-      !view.create
+    // Leaving the reader for the list: focus the list area.
+    if (prev.read !== null && view.read === null && !modalOpen(view)) {
+      void restoreFocus(null);
+      return;
+    }
+    if (!modalOpen(prev)) return;
+    if (!modalOpen(view)) {
+      if (prev.view !== null) {
+        const deleted = deletedId === prev.view;
+        deletedId = null;
+        void restoreFocus(`[data-view-trigger="${prev.view}"]`, deleted);
+      } else if (prev.edit !== null) {
+        void restoreFocus(`[data-edit-trigger="${prev.edit}"]`);
+      } else if (prev.create) {
+        void restoreFocus(".add-trigger");
+      }
+    } else if (
+      (prev.view !== null && view.view !== null && prev.view !== view.view) ||
+      (view.view !== null && prev.view === null) ||
+      (view.edit !== null && prev.edit === null) ||
+      (view.create && !prev.create)
     ) {
-      void restoreFocus(prev);
-    } else if (prev !== null && view.view !== null && prev !== view.view) {
+      // Modal swapped for another (details -> edit, add -> details, ...).
       void keepFocusInDialog();
     }
   }
@@ -132,7 +149,11 @@
 </script>
 
 <TopBar {view} {panelOpen} ontogglepanel={() => (panelOpen = !panelOpen)} />
-{#if view.pageName === "list"}
+{#if view.read !== null}
+  {#key view.read}
+    <ReaderPage id={view.read} />
+  {/key}
+{:else if view.pageName === "list"}
   <div class="layout">
     <main class="main">
       <BookmarkList
@@ -147,6 +168,7 @@
         onreload={reload}
         onchanged={reload}
         ontag={onTag}
+        suggestions={tags.map((t) => t.name)}
       />
     </main>
     <SidePanel {view} {tags} {bundles} open={panelOpen} ontag={onTag} />
@@ -161,5 +183,18 @@
 {#if view.view !== null}
   {#key view.view}
     <DetailsModal id={view.view} onchanged={reload} ondeleted={(id) => (deletedId = id)} />
+  {/key}
+{/if}
+
+{#if view.create}
+  <EditModal
+    mode="create"
+    initialURL={view.create.url}
+    initialTitle={view.create.title}
+    onchanged={reload}
+  />
+{:else if view.edit !== null}
+  {#key view.edit}
+    <EditModal mode="edit" id={view.edit} onchanged={reload} />
   {/key}
 {/if}

@@ -1,4 +1,5 @@
-import type { Bookmark, Tag } from "./api.ts";
+import type { Bookmark, BulkAction, BulkRequest, Tag } from "./api.ts";
+import type { View } from "./view.ts";
 
 /** Adds "#tag" to the query, or removes every "#tag" token (case-insensitive). */
 export function toggleTagInQuery(q: string, tag: string): string {
@@ -71,4 +72,46 @@ export function formatBytes(n: number): string {
     i++;
   }
   return `${v.toFixed(1)} ${units[i]}`;
+}
+
+/**
+ * Commits typed tag text: splits on whitespace/commas, lower-cases, drops a
+ * leading "#" and empty parts, and appends tags not already present.
+ */
+export function commitTagText(current: string[], text: string): string[] {
+  const result = [...current];
+  for (const raw of text.split(/[\s,]+/)) {
+    const tag = raw.replace(/^#+/, "").toLowerCase();
+    if (tag && !result.includes(tag)) result.push(tag);
+  }
+  return result;
+}
+
+/**
+ * Builds the bulk API request for a selection. "All matching" uses the current
+ * search (q + scope + unread). Returns null when that would be unsafe: a
+ * match-all delete (the server rejects it) or any all-matching inside a bundle
+ * (the bulk API has no bundle parameter).
+ */
+export function bulkRequest(
+  sel: { ids: number[]; allMatching: boolean },
+  v: View,
+  action: BulkAction,
+  tags?: string[],
+): BulkRequest | null {
+  const req: BulkRequest = { action };
+  if (sel.allMatching) {
+    if (v.bundle !== null) return null;
+    if (action === "delete" && !v.q.trim() && v.filter !== "unread") return null;
+    req.query = {
+      q: v.q,
+      scope: v.filter === "archived" ? "archived" : "active",
+      ...(v.filter === "unread" ? { unread: "yes" } : {}),
+    };
+  } else {
+    req.ids = sel.ids;
+  }
+  if (tags) req.tags = tags;
+  // Stable key order: selection first.
+  return req.ids ? { ids: req.ids, action, ...(tags ? { tags } : {}) } : req;
 }

@@ -7,6 +7,9 @@
     bookmark: Bookmark;
     activeTags: string[];
     busy: boolean;
+    selecting?: boolean;
+    selected?: boolean;
+    ontoggle?: () => void;
     ontag: (tag: string) => void;
     onview: () => void;
     onedit: () => void;
@@ -17,6 +20,9 @@
     bookmark: b,
     activeTags,
     busy,
+    selecting = false,
+    selected = false,
+    ontoggle,
     ontag,
     onview,
     onedit,
@@ -25,7 +31,16 @@
   }: Props = $props();
 </script>
 
-<li class="bm">
+<li class="bm" class:selected>
+  {#if selecting}
+    <input
+      type="checkbox"
+      class="sel"
+      checked={selected}
+      aria-label="Select {displayTitle(b)}"
+      onchange={() => ontoggle?.()}
+    />
+  {/if}
   {#if b.favicon_url}
     <img class="fav" src={b.favicon_url} alt="" loading="lazy" width="16" height="16" />
   {:else}
@@ -64,8 +79,12 @@
           data-view-trigger={b.id}
           onclick={onview}>View</button
         >
-        <button type="button" class="act" aria-label="Edit {displayTitle(b)}" onclick={onedit}
-          >Edit</button
+        <button
+          type="button"
+          class="act"
+          aria-label="Edit {displayTitle(b)}"
+          data-edit-trigger={b.id}
+          onclick={onedit}>Edit</button
         >
         <button
           type="button"
