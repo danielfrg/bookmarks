@@ -67,79 +67,82 @@
 </script>
 
 <header class="topbar">
-  <div class="topbar-row">
-    <button
-      class="wordmark"
-      type="button"
-      onclick={() =>
-        navigate({ pageName: "list", read: null, q: "", filter: "active", saved: null, page: 1 })}
-    >
-      Bookmarks
-    </button>
-    <div class="search-wrap">
-      <SearchInput
-        bind:value={text}
-        block
-        size="sm"
-        placeholder={'Search… #tag !unread "phrase"'}
-        ariaLabel="Search bookmarks"
-        oninput={onInput}
-        onkeydown={(e) => e.key === "Enter" && submit(text)}
-        onclear={() => submit("")}
-      />
+  <div class="topbar-inner">
+    <div class="topbar-row">
+      <button
+        class="wordmark"
+        type="button"
+        onclick={() =>
+          navigate({ pageName: "list", read: null, q: "", filter: "active", saved: null, page: 1 })}
+      >
+        Bookmarks
+      </button>
+      <span class="grow"></span>
+      <nav class="toplinks" aria-label="Pages">
+        {#each links as l (l.name)}
+          <button
+            type="button"
+            class="toplink"
+            class:on={view.pageName === l.name}
+            onclick={() => navigate({ pageName: l.name })}>{l.label}</button
+          >
+        {/each}
+      </nav>
+      <ThemeToggle />
     </div>
-    <nav class="toplinks" aria-label="Pages">
-      {#each links as l (l.name)}
-        <button
-          type="button"
-          class="toplink"
-          class:on={view.pageName === l.name}
-          onclick={() => navigate({ pageName: l.name })}>{l.label}</button
-        >
-      {/each}
-    </nav>
-    <ThemeToggle />
-  </div>
-  <div class="topbar-row controls">
-    {#if onList}
-      <SegmentedControl
-        ariaLabel="Filter"
-        options={filters}
-        value={view.filter}
-        onchange={(v) => navigate({ filter: v as Filter, pageName: "list", page: 1 })}
-      />
-      <SelectDropdown
-        title="Sort"
-        options={sorts}
-        value={view.sort}
-        onchange={(v) => navigate({ sort: v, pageName: "list", page: 1 })}
-      />
-    {/if}
-    <span class="grow"></span>
-    {#if onList}
-      <span class="panel-toggle">
-        <Button size="sm" ariaExpanded={panelOpen} onclick={ontogglepanel}>
-          <TagIcon size={14} /> Tags
-        </Button>
-      </span>
-    {/if}
-    <Button
-      size="sm"
-      class="help-trigger"
-      ariaLabel="Keyboard shortcuts"
-      title="Keyboard shortcuts (?)"
-      onclick={onhelp}
-    >
-      ?
-    </Button>
-    <Button
-      tone="info"
-      surface="solid"
-      size="sm"
-      class="add-trigger"
-      onclick={() => navigate({ create: { url: "", title: "" } })}
-    >
-      <PlusIcon size={14} /> Add
-    </Button>
+    <div class="topbar-row controls">
+      <div class="search-wrap">
+        <SearchInput
+          bind:value={text}
+          block
+          size="sm"
+          placeholder={'Search… #tag !unread "phrase"'}
+          ariaLabel="Search bookmarks"
+          oninput={onInput}
+          onkeydown={(e) => e.key === "Enter" && submit(text)}
+          onclear={() => submit("")}
+        />
+      </div>
+      {#if onList}
+        <SegmentedControl
+          ariaLabel="Filter"
+          options={filters}
+          value={view.filter}
+          onchange={(v) => navigate({ filter: v as Filter, pageName: "list", page: 1 })}
+        />
+        <SelectDropdown
+          title="Sort"
+          options={sorts}
+          value={view.sort}
+          onchange={(v) => navigate({ sort: v, pageName: "list", page: 1 })}
+        />
+      {/if}
+      <span class="grow"></span>
+      {#if onList}
+        <span class="panel-toggle">
+          <Button size="sm" ariaExpanded={panelOpen} onclick={ontogglepanel}>
+            <TagIcon size={14} /> Tags
+          </Button>
+        </span>
+      {/if}
+      <Button
+        tone="info"
+        surface="solid"
+        size="sm"
+        class="add-trigger"
+        onclick={() => navigate({ create: { url: "", title: "" } })}
+      >
+        <PlusIcon size={14} /> Add
+      </Button>
+      <Button
+        size="sm"
+        class="help-trigger"
+        ariaLabel="Keyboard shortcuts"
+        title="Keyboard shortcuts (?)"
+        onclick={onhelp}
+      >
+        ?
+      </Button>
+    </div>
   </div>
 </header>

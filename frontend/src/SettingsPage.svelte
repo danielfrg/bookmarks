@@ -168,7 +168,7 @@
 </script>
 
 <main class="main page settings-page">
-  <PageHeader title="Settings">
+  <PageHeader title="Settings" hideTitle>
     <span class="save-status small" role="status" aria-live="polite">
       {#if saving}<Spinner size={12} label="Saving" /> Saving…{:else if saved}Saved{/if}
     </span>

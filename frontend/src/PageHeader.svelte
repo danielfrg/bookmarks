@@ -5,9 +5,11 @@
 
   interface Props {
     title: string;
+    /** Keep the heading for screen readers but don't show it. */
+    hideTitle?: boolean;
     children?: Snippet;
   }
-  let { title, children }: Props = $props();
+  let { title, hideTitle = false, children }: Props = $props();
 </script>
 
 <div class="page-head">
@@ -20,7 +22,7 @@
       navigate({ pageName: "list" });
     }}><ArrowLeftIcon size={14} aria-hidden="true" /> Bookmarks</a
   >
-  <h2>{title}</h2>
+  <h2 class:sr-only={hideTitle}>{title}</h2>
   <span class="grow"></span>
   {@render children?.()}
 </div>
