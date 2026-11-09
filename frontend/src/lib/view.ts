@@ -1,12 +1,12 @@
 import type { ListParams } from "./api.ts";
 
 export type Filter = "active" | "unread" | "archived";
-export type PageName = "list" | "tags" | "bundles" | "settings";
+export type PageName = "list" | "tags" | "saved" | "settings";
 export interface View {
   q: string;
   filter: Filter;
   sort: string;
-  bundle: number | null;
+  saved: number | null;
   page: number;
   view: number | null;
   edit: number | null;
@@ -18,7 +18,7 @@ export interface View {
 const DEFAULT_SORT = "added_desc";
 const SORTS = ["added_desc", "added_asc", "title_asc", "title_desc"];
 const FILTERS: Filter[] = ["active", "unread", "archived"];
-const PAGES: PageName[] = ["tags", "bundles", "settings"];
+const PAGES: PageName[] = ["tags", "saved", "settings"];
 
 function positiveInt(value: string | null): number | null {
   if (value === null || !/^\d+$/.test(value)) return null;
@@ -35,7 +35,7 @@ export function readView(url: URL): View {
     q: p.get("q") ?? "",
     filter: FILTERS.includes(filter) ? filter : "active",
     sort: SORTS.includes(sort) ? sort : DEFAULT_SORT,
-    bundle: positiveInt(p.get("bundle")),
+    saved: positiveInt(p.get("saved")),
     page: positiveInt(p.get("page")) ?? 1,
     view: positiveInt(p.get("view")),
     edit: positiveInt(p.get("edit")),
@@ -51,7 +51,7 @@ export function writeView(v: View): string {
   if (v.q) p.set("q", v.q);
   if (v.filter !== "active") p.set("filter", v.filter);
   if (v.sort !== DEFAULT_SORT) p.set("sort", v.sort);
-  if (v.bundle !== null) p.set("bundle", String(v.bundle));
+  if (v.saved !== null) p.set("saved", String(v.saved));
   if (v.page > 1) p.set("page", String(v.page));
   if (v.view !== null) p.set("view", String(v.view));
   if (v.edit !== null) p.set("edit", String(v.edit));
@@ -68,18 +68,13 @@ export function writeView(v: View): string {
 
 /**
  * The path+search to move to: the current view with `patch` applied. Changing
- * the search, filter, sort or bundle without naming a page goes back to page 1.
+ * the search, filter, sort or saved search without naming a page goes back to page 1.
  */
 export function nextURL(current: URL, patch: Partial<View>): string {
   const v = { ...readView(current), ...patch };
   if (patch.page === undefined) {
     const old = readView(current);
-    if (
-      v.q !== old.q ||
-      v.filter !== old.filter ||
-      v.sort !== old.sort ||
-      v.bundle !== old.bundle
-    ) {
+    if (v.q !== old.q || v.filter !== old.filter || v.sort !== old.sort || v.saved !== old.saved) {
       v.page = 1;
     }
   }
@@ -103,6 +98,6 @@ export function listParams(v: View, pageSize: number): ListParams {
     offset: (v.page - 1) * pageSize,
   };
   if (v.filter === "unread") params.unread = "yes";
-  if (v.bundle !== null) params.bundle = v.bundle;
+  if (v.saved !== null) params.savedSearch = v.saved;
   return params;
 }

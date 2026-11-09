@@ -222,10 +222,10 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-// SearchInput describes a bookmark search. BundleID 0 means no bundle.
+// SearchInput describes a bookmark search. SavedSearchID 0 means no saved search.
 type SearchInput struct {
 	Q, Scope, Unread, Sort string
-	BundleID               int64
+	SavedSearchID          int64
 	Limit, Offset          int
 	Snippets               bool
 }
@@ -247,7 +247,7 @@ func parseQuery(field, q string) (query.Expr, error) {
 	return e, err
 }
 
-// Search parses in.Q, combines it with the bundle's filters and runs it.
+// Search parses in.Q, combines it with the saved search's filters and runs it.
 func (s *Service) Search(ctx context.Context, in SearchInput) (store.SearchResult, error) {
 	switch in.Scope {
 	case "", "active", "archived", "all":
@@ -266,12 +266,12 @@ func (s *Service) Search(ctx context.Context, in SearchInput) (store.SearchResul
 	if err != nil {
 		return store.SearchResult{}, err
 	}
-	if in.BundleID != 0 {
-		b, err := s.st.GetBundle(ctx, in.BundleID)
+	if in.SavedSearchID != 0 {
+		b, err := s.st.GetSavedSearch(ctx, in.SavedSearchID)
 		if err != nil {
 			return store.SearchResult{}, err
 		}
-		be, err := bundleExpr(b)
+		be, err := savedSearchExpr(b)
 		if err != nil {
 			return store.SearchResult{}, err
 		}
@@ -283,10 +283,10 @@ func (s *Service) Search(ctx context.Context, in SearchInput) (store.SearchResul
 	})
 }
 
-// bundleExpr is the bundle's search AND (any of AnyTags) AND each AllTags AND
+// savedSearchExpr is the saved search's search AND (any of AnyTags) AND each AllTags AND
 // NOT each ExcludedTags AND its unread filter.
-func bundleExpr(b bookmarks.Bundle) (query.Expr, error) {
-	search, err := parseQuery("search", b.Search)
+func savedSearchExpr(b bookmarks.SavedSearch) (query.Expr, error) {
+	sq, err := parseQuery("query", b.Query)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +298,7 @@ func bundleExpr(b bookmarks.Bundle) (query.Expr, error) {
 			anyTag = query.Or{L: anyTag, R: query.Tag{Name: t}}
 		}
 	}
-	parts := []query.Expr{search, anyTag}
+	parts := []query.Expr{sq, anyTag}
 	for _, t := range b.AllTags {
 		parts = append(parts, query.Tag{Name: t})
 	}

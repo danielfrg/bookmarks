@@ -6,7 +6,7 @@ const base: View = {
   q: "",
   filter: "active",
   sort: "added_desc",
-  bundle: null,
+  saved: null,
   page: 1,
   view: null,
   edit: null,
@@ -27,13 +27,13 @@ test("readView/writeView round trip for each param", () => {
     [{ filter: "unread" }, "?filter=unread"],
     [{ filter: "archived" }, "?filter=archived"],
     [{ sort: "title_asc" }, "?sort=title_asc"],
-    [{ bundle: 3 }, "?bundle=3"],
+    [{ saved: 3 }, "?saved=3"],
     [{ page: 4 }, "?page=4"],
     [{ view: 12 }, "?view=12"],
     [{ edit: 7 }, "?edit=7"],
     [{ read: 9 }, "?read=9"],
     [{ pageName: "tags" }, "?page_name=tags"],
-    [{ pageName: "bundles" }, "?page_name=bundles"],
+    [{ pageName: "saved" }, "?page_name=saved"],
     [{ pageName: "settings" }, "?page_name=settings"],
     [{ create: { url: "", title: "" } }, "?new=1"],
     [
@@ -53,7 +53,7 @@ test("writeView uses a stable param order", () => {
     q: "x",
     filter: "unread",
     sort: "added_asc",
-    bundle: 2,
+    saved: 2,
     page: 3,
     view: 4,
     edit: 5,
@@ -66,7 +66,7 @@ test("writeView uses a stable param order", () => {
     "q",
     "filter",
     "sort",
-    "bundle",
+    "saved",
     "page",
     "view",
     "edit",
@@ -80,7 +80,7 @@ test("writeView uses a stable param order", () => {
 
 test("garbage params fall back to defaults", () => {
   assert.deepEqual(read("?view=abc&page=-3&filter=nope"), base);
-  assert.deepEqual(read("?bundle=0&edit=1.5&read=&page=0&sort=bogus&page_name=x"), {
+  assert.deepEqual(read("?saved=0&edit=1.5&read=&page=0&sort=bogus&page_name=x"), {
     ...base,
     sort: "added_desc",
   });
@@ -94,12 +94,12 @@ test("listParams maps the filters and offsets", () => {
     limit: 30,
     offset: 0,
   });
-  assert.deepEqual(listParams({ ...base, filter: "unread", page: 3, bundle: 5 }, 20), {
+  assert.deepEqual(listParams({ ...base, filter: "unread", page: 3, saved: 5 }, 20), {
     q: "",
     scope: "active",
     unread: "yes",
     sort: "added_desc",
-    bundle: 5,
+    savedSearch: 5,
     limit: 20,
     offset: 40,
   });

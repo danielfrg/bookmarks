@@ -90,8 +90,8 @@ export function commitTagText(current: string[], text: string): string[] {
 /**
  * Builds the bulk API request for a selection. "All matching" uses the current
  * search (q + scope + unread). Returns null when that would be unsafe: a
- * match-all delete (the server rejects it) or any all-matching inside a bundle
- * (the bulk API has no bundle parameter).
+ * match-all delete (the server rejects it) or any all-matching inside a saved search
+ * (the bulk API has no saved search parameter).
  */
 export function bulkRequest(
   sel: { ids: number[]; allMatching: boolean },
@@ -101,7 +101,7 @@ export function bulkRequest(
 ): BulkRequest | null {
   const req: BulkRequest = sel.allMatching ? { action } : { ids: sel.ids, action };
   if (sel.allMatching) {
-    if (v.bundle !== null) return null;
+    if (v.saved !== null) return null;
     if (action === "delete" && !v.q.trim() && v.filter !== "unread") return null;
     req.query = {
       q: v.q,

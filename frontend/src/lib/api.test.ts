@@ -114,7 +114,7 @@ test("list builds query string", async () => {
         scope: "active",
         unread: "yes",
         sort: "title_asc",
-        bundle: 4,
+        savedSearch: 4,
         limit: 30,
         offset: 60,
       });
@@ -122,7 +122,7 @@ test("list builds query string", async () => {
       assert.equal(u.pathname, "/_/api/bookmarks");
       assert.equal(u.searchParams.get("q"), "a b #go");
       assert.equal(u.searchParams.get("unread"), "yes");
-      assert.equal(u.searchParams.get("bundle"), "4");
+      assert.equal(u.searchParams.get("saved_search"), "4");
       assert.equal(u.searchParams.get("limit"), "30");
       assert.equal(u.searchParams.get("offset"), "60");
     },
@@ -195,15 +195,15 @@ test("routes and verbs match the server", async () => {
       await api.reader(2, 100, 500);
       await api.reader(2);
       await api.renameTag(7, "new");
-      await api.saveBundle({ name: "b" });
-      await api.saveBundle({ id: 3, name: "b" });
-      await api.reorderBundles([3, 1]);
+      await api.saveSavedSearch({ name: "b" });
+      await api.saveSavedSearch({ id: 3, name: "b" });
+      await api.reorderSavedSearches([3, 1]);
       await api.putSettings({} as never);
       await api.bulk({ ids: [1], action: "archive" });
       await api.extract(2);
       await api.deleteArchive(8);
       await api.deleteTag(7);
-      await api.deleteBundle(3);
+      await api.deleteSavedSearch(3);
       const got = calls.map((c) => `${c.init.method ?? "GET"} ${c.url}`);
       assert.deepEqual(got, [
         "GET /_/api/bookmarks/2",
@@ -213,15 +213,15 @@ test("routes and verbs match the server", async () => {
         "GET /_/api/bookmarks/2/reader?offset=100&max_chars=500",
         "GET /_/api/bookmarks/2/reader",
         "PATCH /_/api/tags/7",
-        "POST /_/api/bundles",
-        "PUT /_/api/bundles/3",
-        "POST /_/api/bundles/reorder",
+        "POST /_/api/saved-searches",
+        "PUT /_/api/saved-searches/3",
+        "POST /_/api/saved-searches/reorder",
         "PUT /_/api/settings",
         "POST /_/api/bookmarks/bulk",
         "POST /_/api/bookmarks/2/reader/extract",
         "DELETE /_/api/archives/8",
         "DELETE /_/api/tags/7",
-        "DELETE /_/api/bundles/3",
+        "DELETE /_/api/saved-searches/3",
       ]);
       assert.equal(calls[7].init.body, JSON.stringify({ name: "b" }));
       assert.equal(calls[9].init.body, JSON.stringify({ ids: [3, 1] }));

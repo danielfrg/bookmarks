@@ -192,7 +192,7 @@
                   <button
                     type="button"
                     class="name-link mono"
-                    onclick={() => navigate({ pageName: "list", q: `#${t.name}`, bundle: null })}
+                    onclick={() => navigate({ pageName: "list", q: `#${t.name}`, saved: null })}
                     >#{t.name}</button
                   >
                 {/if}

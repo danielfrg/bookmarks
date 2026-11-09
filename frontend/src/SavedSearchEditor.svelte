@@ -1,23 +1,23 @@
 <script lang="ts">
   import { Button, Modal, SegmentedControl, Spinner, TextInput } from "@kenn-io/kit-ui";
   import { untrack } from "svelte";
-  import { api, type Bundle } from "./lib/api.ts";
+  import { api, type SavedSearch } from "./lib/api.ts";
   import { commitTagText } from "./lib/query.ts";
   import TagInput from "./TagInput.svelte";
 
   interface Props {
-    /** The bundle to edit; null creates a new one. */
-    bundle: Bundle | null;
+    /** The saved search to edit; null creates a new one. */
+    savedSearch: SavedSearch | null;
     suggestions: string[];
     onsaved: () => void;
     onclose: () => void;
   }
-  let { bundle, suggestions, onsaved, onclose }: Props = $props();
+  let { savedSearch, suggestions, onsaved, onclose }: Props = $props();
 
   const uid = $props.id();
-  const b0 = untrack(() => bundle);
+  const b0 = untrack(() => savedSearch);
   let name = $state(b0?.name ?? "");
-  let search = $state(b0?.search ?? "");
+  let query = $state(b0?.query ?? "");
   let anyTags = $state<string[]>([...(b0?.any_tags ?? [])]);
   let allTags = $state<string[]>([...(b0?.all_tags ?? [])]);
   let excludedTags = $state<string[]>([...(b0?.excluded_tags ?? [])]);
@@ -39,14 +39,14 @@
     saving = true;
     error = "";
     try {
-      await api.saveBundle({
+      await api.saveSavedSearch({
         id: b0?.id,
         name: name.trim(),
-        search: search.trim(),
+        query: query.trim(),
         any_tags: commitTagText(anyTags, anyText),
         all_tags: commitTagText(allTags, allText),
         excluded_tags: commitTagText(excludedTags, exclText),
-        filter_unread: unread as Bundle["filter_unread"],
+        filter_unread: unread as SavedSearch["filter_unread"],
       });
       onsaved();
     } catch (e) {
@@ -65,8 +65,8 @@
 </script>
 
 <Modal
-  title={b0 ? "Edit bundle" : "New bundle"}
-  ariaLabel={b0 ? "Edit bundle" : "New bundle"}
+  title={b0 ? "Edit saved search" : "New saved search"}
+  ariaLabel={b0 ? "Edit saved search" : "New saved search"}
   width="560px"
   maxWidth="min(560px, calc(100vw - 32px))"
   onclose={() => !saving && onclose()}
@@ -94,7 +94,7 @@
         block
         class="mono"
         disabled={saving}
-        bind:value={search}
+        bind:value={query}
         placeholder="Search terms"
       />
     </div>

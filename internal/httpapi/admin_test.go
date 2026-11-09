@@ -16,10 +16,10 @@ type tagResp struct {
 	Count int    `json:"count"`
 }
 
-type bundleResp struct {
+type savedSearchResp struct {
 	ID           int64    `json:"id"`
 	Name         string   `json:"name"`
-	Search       string   `json:"search"`
+	Query        string   `json:"query"`
 	AnyTags      []string `json:"any_tags"`
 	AllTags      []string `json:"all_tags"`
 	ExcludedTags []string `json:"excluded_tags"`
@@ -28,7 +28,7 @@ type bundleResp struct {
 	DateCreated  string   `json:"date_created"`
 }
 
-func TestTagsBundlesSettingsEndpoints(t *testing.T) {
+func TestTagsSavedSearchesSettingsEndpoints(t *testing.T) {
 	e := newTestEnv(t)
 	for _, u := range []string{"https://a.example", "https://b.example"} {
 		if w := e.do("POST", "/_/api/bookmarks?capture=none", map[string]any{"url": u, "tags": []string{"go", "web"}}); w.Code != 201 {
@@ -63,46 +63,46 @@ func TestTagsBundlesSettingsEndpoints(t *testing.T) {
 		t.Fatalf("tags after delete = %+v", got)
 	}
 
-	// Bundles.
-	w = e.do("POST", "/_/api/bundles", map[string]any{"name": "Reading", "any_tags": []string{"Go"}, "filter_unread": "yes", "unknown": true})
+	// SavedSearches.
+	w = e.do("POST", "/_/api/saved-searches", map[string]any{"name": "Reading", "any_tags": []string{"Go"}, "filter_unread": "yes", "unknown": true})
 	if w.Code != 201 {
 		t.Fatal(w.Code, w.Body.String())
 	}
-	b1 := decode[bundleResp](t, w)
+	b1 := decode[savedSearchResp](t, w)
 	if b1.Name != "Reading" || b1.FilterUnread != "yes" || len(b1.AnyTags) != 1 || b1.AnyTags[0] != "go" || b1.AllTags == nil || b1.DateCreated == "" {
-		t.Fatalf("bundle = %+v", b1)
+		t.Fatalf("saved search = %+v", b1)
 	}
-	b2 := decode[bundleResp](t, e.do("POST", "/_/api/bundles", map[string]any{"name": "Second"}))
+	b2 := decode[savedSearchResp](t, e.do("POST", "/_/api/saved-searches", map[string]any{"name": "Second"}))
 	if b2.FilterUnread != "off" {
 		t.Fatalf("default filter_unread = %q", b2.FilterUnread)
 	}
-	if w := e.do("POST", "/_/api/bundles", map[string]any{"name": "Bad", "filter_unread": "maybe"}); w.Code != 422 {
+	if w := e.do("POST", "/_/api/saved-searches", map[string]any{"name": "Bad", "filter_unread": "maybe"}); w.Code != 422 {
 		t.Fatal("bad filter_unread:", w.Code, w.Body.String())
 	}
-	w = e.do("PUT", "/_/api/bundles/"+itoa(b1.ID), map[string]any{"name": "Renamed", "search": "golang", "filter_unread": "no"})
-	if got := decode[bundleResp](t, w); w.Code != 200 || got.Name != "Renamed" || got.Search != "golang" || got.FilterUnread != "no" {
+	w = e.do("PUT", "/_/api/saved-searches/"+itoa(b1.ID), map[string]any{"name": "Renamed", "query": "golang", "filter_unread": "no"})
+	if got := decode[savedSearchResp](t, w); w.Code != 200 || got.Name != "Renamed" || got.Query != "golang" || got.FilterUnread != "no" {
 		t.Fatalf("put = %d %+v", w.Code, got)
 	}
-	if w := e.do("PUT", "/_/api/bundles/"+itoa(b1.ID), map[string]any{"name": "R", "filter_unread": "x"}); w.Code != 422 {
+	if w := e.do("PUT", "/_/api/saved-searches/"+itoa(b1.ID), map[string]any{"name": "R", "filter_unread": "x"}); w.Code != 422 {
 		t.Fatal("put bad filter_unread:", w.Code)
 	}
-	if w := e.do("PUT", "/_/api/bundles/999", map[string]any{"name": "R"}); w.Code != 404 {
+	if w := e.do("PUT", "/_/api/saved-searches/999", map[string]any{"name": "R"}); w.Code != 404 {
 		t.Fatal(w.Code)
 	}
-	if w := e.do("POST", "/_/api/bundles/reorder", map[string]any{"ids": []int64{b2.ID, b1.ID}}); w.Code != 204 {
+	if w := e.do("POST", "/_/api/saved-searches/reorder", map[string]any{"ids": []int64{b2.ID, b1.ID}}); w.Code != 204 {
 		t.Fatal(w.Code, w.Body.String())
 	}
-	list := decode[[]bundleResp](t, e.do("GET", "/_/api/bundles", nil))
+	list := decode[[]savedSearchResp](t, e.do("GET", "/_/api/saved-searches", nil))
 	if len(list) != 2 || list[0].ID != b2.ID {
 		t.Fatalf("order = %+v", list)
 	}
-	if w := e.do("GET", "/_/api/bundles/"+itoa(b1.ID), nil); w.Code != 200 {
+	if w := e.do("GET", "/_/api/saved-searches/"+itoa(b1.ID), nil); w.Code != 200 {
 		t.Fatal(w.Code)
 	}
-	if w := e.do("DELETE", "/_/api/bundles/"+itoa(b1.ID), nil); w.Code != 204 {
+	if w := e.do("DELETE", "/_/api/saved-searches/"+itoa(b1.ID), nil); w.Code != 204 {
 		t.Fatal(w.Code)
 	}
-	if w := e.do("GET", "/_/api/bundles/"+itoa(b1.ID), nil); w.Code != 404 {
+	if w := e.do("GET", "/_/api/saved-searches/"+itoa(b1.ID), nil); w.Code != 404 {
 		t.Fatal(w.Code)
 	}
 

@@ -36,7 +36,7 @@ Don't explain every part of the UI with text. Add messages only when needed
 
 ## Design Principles
 
-- The bookmark list comes first; filters, bundles and tags sit beside it.
+- The bookmark list comes first; filters, saved searches and tags sit beside it.
 - Saving an existing URL updates the bookmark instead of duplicating it.
 - Archives and reader text are visible and recoverable: open, download,
   capture again, re-extract.

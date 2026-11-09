@@ -1,40 +1,40 @@
 <script lang="ts">
-  import type { Bundle, Tag } from "./lib/api.ts";
+  import type { SavedSearch, Tag } from "./lib/api.ts";
   import { activeTagsOf, groupTags } from "./lib/query.ts";
   import { navigate, type View } from "./lib/view.ts";
 
   interface Props {
     view: View;
     tags: Tag[];
-    bundles: Bundle[];
+    savedSearches: SavedSearch[];
     status: "loading" | "ready" | "error";
     open: boolean;
     ontag: (tag: string) => void;
   }
-  let { view, tags, bundles, status, open, ontag }: Props = $props();
+  let { view, tags, savedSearches, status, open, ontag }: Props = $props();
 
   const groups = $derived(groupTags(tags));
   const activeTags = $derived(activeTagsOf(view.q));
 </script>
 
-<aside class="side" class:open aria-label="Bundles and tags">
-  <h4>BUNDLES</h4>
-  <ul class="bundle-list">
+<aside class="side" class:open aria-label="Saved searches and tags">
+  <h4>SAVED SEARCHES</h4>
+  <ul class="saved-list">
     <li>
       <button
         type="button"
-        class:on={view.bundle === null}
-        onclick={() => navigate({ bundle: null })}
+        class:on={view.saved === null}
+        onclick={() => navigate({ saved: null })}
       >
         All
       </button>
     </li>
-    {#each bundles as b (b.id)}
+    {#each savedSearches as b (b.id)}
       <li>
         <button
           type="button"
-          class:on={view.bundle === b.id}
-          onclick={() => navigate({ bundle: b.id })}
+          class:on={view.saved === b.id}
+          onclick={() => navigate({ saved: b.id })}
         >
           {b.name}
         </button>
@@ -43,7 +43,7 @@
   </ul>
   <h4>TAGS</h4>
   {#if status === "error"}
-    <p class="muted small" role="alert">Could not load tags and bundles.</p>
+    <p class="muted small" role="alert">Could not load tags and saved searches.</p>
   {:else if status === "loading" && groups.length === 0}
     <p class="muted small">Loading…</p>
   {:else if groups.length === 0}

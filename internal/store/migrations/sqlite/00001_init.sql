@@ -52,10 +52,10 @@ CREATE TABLE reader_texts (
     extracted_at TEXT NOT NULL
 );
 
-CREATE TABLE bundles (
+CREATE TABLE saved_searches (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     name          TEXT NOT NULL,
-    search        TEXT NOT NULL DEFAULT '',
+    query         TEXT NOT NULL DEFAULT '',
     any_tags      TEXT NOT NULL DEFAULT '',
     all_tags      TEXT NOT NULL DEFAULT '',
     excluded_tags TEXT NOT NULL DEFAULT '',
@@ -91,7 +91,7 @@ CREATE VIRTUAL TABLE bookmarks_fts USING fts5(title, description, notes, url, ta
 DROP TABLE bookmarks_fts;
 DROP TABLE jobs;
 DROP TABLE settings;
-DROP TABLE bundles;
+DROP TABLE saved_searches;
 DROP TABLE reader_texts;
 DROP TABLE archives;
 DROP TABLE bookmark_tags;

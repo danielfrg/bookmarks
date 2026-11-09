@@ -78,7 +78,7 @@ func (s *Service) Bulk(ctx context.Context, in BulkInput) (int, error) {
 		return 0, invalid("action", "unknown action")
 	}
 
-	if in.Action == "delete" && len(in.IDs) == 0 && in.Query != nil && in.Query.Unread == "" && in.Query.BundleID == 0 {
+	if in.Action == "delete" && len(in.IDs) == 0 && in.Query != nil && in.Query.Unread == "" && in.Query.SavedSearchID == 0 {
 		expr, err := parseQuery("query", in.Query.Q)
 		if err != nil {
 			return 0, err

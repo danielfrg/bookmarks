@@ -36,7 +36,7 @@ func NewHandler(assets fs.FS, deps Deps) http.Handler {
 	registerBookmarks(api, deps.Service)
 	registerArchives(api, deps.Service)
 	registerTags(api, deps.Service)
-	registerBundles(api, deps.Service)
+	registerSavedSearches(api, deps.Service)
 	registerSettings(api, deps.Service)
 	registerBulk(api, deps.Service)
 	mux.HandleFunc("POST /_/api/import/netscape", importNetscape(deps.Service))

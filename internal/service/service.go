@@ -42,11 +42,11 @@ type Store interface {
 	RenameTag(ctx context.Context, id int64, name string) error
 	DeleteTag(ctx context.Context, id int64) error
 
-	ListBundles(ctx context.Context) ([]bookmarks.Bundle, error)
-	GetBundle(ctx context.Context, id int64) (bookmarks.Bundle, error)
-	SaveBundle(ctx context.Context, b *bookmarks.Bundle) error
-	DeleteBundle(ctx context.Context, id int64) error
-	ReorderBundles(ctx context.Context, ids []int64) error
+	ListSavedSearches(ctx context.Context) ([]bookmarks.SavedSearch, error)
+	GetSavedSearch(ctx context.Context, id int64) (bookmarks.SavedSearch, error)
+	SaveSavedSearch(ctx context.Context, b *bookmarks.SavedSearch) error
+	DeleteSavedSearch(ctx context.Context, id int64) error
+	ReorderSavedSearches(ctx context.Context, ids []int64) error
 
 	GetSettings(ctx context.Context) (bookmarks.Settings, error)
 	PutSettings(ctx context.Context, v bookmarks.Settings) error

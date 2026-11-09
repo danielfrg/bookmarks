@@ -53,10 +53,10 @@ export interface Tag {
   name: string;
   count: number;
 }
-export interface Bundle {
+export interface SavedSearch {
   id: number;
   name: string;
-  search: string;
+  query: string;
   any_tags: string[];
   all_tags: string[];
   excluded_tags: string[];
@@ -98,7 +98,7 @@ export interface ListParams {
   scope?: "active" | "archived" | "all";
   unread?: "yes" | "no";
   sort?: string;
-  bundle?: number;
+  savedSearch?: number;
   limit?: number;
   offset?: number;
 }
@@ -176,7 +176,7 @@ export const api = {
         scope: p.scope,
         unread: p.unread,
         sort: p.sort,
-        bundle: p.bundle,
+        saved_search: p.savedSearch,
         limit: p.limit,
         offset: p.offset,
       })}`,
@@ -218,18 +218,22 @@ export const api = {
   renameTag: (id: number, name: string) =>
     requestJSON<Tag>(`${base}/tags/${id}`, { method: "PATCH", body: body({ name }) }),
   deleteTag: (id: number) => requestJSON<void>(`${base}/tags/${id}`, { method: "DELETE" }),
-  bundles: () => requestJSON<Bundle[]>(`${base}/bundles`),
-  saveBundle(b: Partial<Bundle> & { name: string }) {
-    const { id, name, search, any_tags, all_tags, excluded_tags, filter_unread } = b;
-    const payload = { name, search, any_tags, all_tags, excluded_tags, filter_unread };
-    return requestJSON<Bundle>(id ? `${base}/bundles/${id}` : `${base}/bundles`, {
-      method: id ? "PUT" : "POST",
-      body: body(payload),
-    });
+  savedSearches: () => requestJSON<SavedSearch[]>(`${base}/saved-searches`),
+  saveSavedSearch(b: Partial<SavedSearch> & { name: string }) {
+    const { id, name, query, any_tags, all_tags, excluded_tags, filter_unread } = b;
+    const payload = { name, query, any_tags, all_tags, excluded_tags, filter_unread };
+    return requestJSON<SavedSearch>(
+      id ? `${base}/saved-searches/${id}` : `${base}/saved-searches`,
+      {
+        method: id ? "PUT" : "POST",
+        body: body(payload),
+      },
+    );
   },
-  deleteBundle: (id: number) => requestJSON<void>(`${base}/bundles/${id}`, { method: "DELETE" }),
-  reorderBundles: (ids: number[]) =>
-    requestJSON<void>(`${base}/bundles/reorder`, { method: "POST", body: body({ ids }) }),
+  deleteSavedSearch: (id: number) =>
+    requestJSON<void>(`${base}/saved-searches/${id}`, { method: "DELETE" }),
+  reorderSavedSearches: (ids: number[]) =>
+    requestJSON<void>(`${base}/saved-searches/reorder`, { method: "POST", body: body({ ids }) }),
   settings: () => requestJSON<Settings>(`${base}/settings`),
   putSettings: (s: Settings) =>
     requestJSON<Settings>(`${base}/settings`, { method: "PUT", body: body(s) }),

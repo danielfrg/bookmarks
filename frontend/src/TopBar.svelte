@@ -61,7 +61,7 @@
   const onList = $derived(view.pageName === "list" && view.read === null);
   const links = [
     { name: "tags", label: "Tags" },
-    { name: "bundles", label: "Bundles" },
+    { name: "saved", label: "Saved searches" },
     { name: "settings", label: "Settings" },
   ] as const;
 </script>
@@ -72,7 +72,7 @@
       class="wordmark"
       type="button"
       onclick={() =>
-        navigate({ pageName: "list", read: null, q: "", filter: "active", bundle: null, page: 1 })}
+        navigate({ pageName: "list", read: null, q: "", filter: "active", saved: null, page: 1 })}
     >
       Bookmarks
     </button>

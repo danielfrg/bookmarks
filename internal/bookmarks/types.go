@@ -75,10 +75,10 @@ type Tag struct {
 	Count int
 }
 
-type Bundle struct {
+type SavedSearch struct {
 	ID           int64
 	Name         string
-	Search       string
+	Query        string
 	AnyTags      []string
 	AllTags      []string
 	ExcludedTags []string

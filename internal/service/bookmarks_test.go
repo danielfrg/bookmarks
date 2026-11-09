@@ -209,7 +209,7 @@ func TestUpdatePatchesAndConflicts(t *testing.T) {
 	}
 }
 
-func TestSearchWithBundle(t *testing.T) {
+func TestSearchWithSavedSearch(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
 	mk := func(url string, tags []string, unread bool) int64 {
@@ -226,28 +226,28 @@ func TestSearchWithBundle(t *testing.T) {
 	mk("https://e.example", []string{"go", "web"}, false)       // read
 	mk("https://f.example", []string{"python", "web"}, true)    // any-tag python
 
-	bundle, err := e.svc.SaveBundle(ctx, bookmarks.Bundle{
-		Name: "Go web", Search: "golang", AnyTags: []string{"Go", "python"}, AllTags: []string{"WEB"},
+	ss, err := e.svc.SaveSavedSearch(ctx, bookmarks.SavedSearch{
+		Name: "Go web", Query: "golang", AnyTags: []string{"Go", "python"}, AllTags: []string{"WEB"},
 		ExcludedTags: []string{"old"}, FilterUnread: "yes",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := e.svc.Search(ctx, SearchInput{BundleID: bundle.ID, Q: "not #python"})
+	res, err := e.svc.Search(ctx, SearchInput{SavedSearchID: ss.ID, Q: "not #python"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if res.Total != 1 || res.Hits[0].ID != want {
 		t.Fatalf("hits = %+v", res)
 	}
-	res, err = e.svc.Search(ctx, SearchInput{BundleID: bundle.ID})
+	res, err = e.svc.Search(ctx, SearchInput{SavedSearchID: ss.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if res.Total != 2 {
 		t.Fatalf("total = %d, want 2 (a and f)", res.Total)
 	}
-	if _, err := e.svc.Search(ctx, SearchInput{BundleID: 999}); !errors.Is(err, store.ErrNotFound) {
+	if _, err := e.svc.Search(ctx, SearchInput{SavedSearchID: 999}); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -276,28 +276,28 @@ func TestSearchValidation(t *testing.T) {
 	}
 }
 
-func TestBundleValidation(t *testing.T) {
+func TestSavedSearchValidation(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
-	for _, b := range []bookmarks.Bundle{
+	for _, b := range []bookmarks.SavedSearch{
 		{Name: " "},
 		{Name: "x", FilterUnread: "maybe"},
-		{Name: "x", Search: "(bad"},
+		{Name: "x", Query: "(bad"},
 	} {
 		var ve *ValidationError
-		if _, err := e.svc.SaveBundle(ctx, b); !errors.As(err, &ve) {
-			t.Fatalf("SaveBundle(%+v) err = %v", b, err)
+		if _, err := e.svc.SaveSavedSearch(ctx, b); !errors.As(err, &ve) {
+			t.Fatalf("SaveSavedSearch(%+v) err = %v", b, err)
 		}
 	}
-	b, err := e.svc.SaveBundle(ctx, bookmarks.Bundle{Name: "x", AnyTags: []string{"B a", "A"}})
+	b, err := e.svc.SaveSavedSearch(ctx, bookmarks.SavedSearch{Name: "x", AnyTags: []string{"B a", "A"}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(b.AnyTags, []string{"a", "b"}) || b.FilterUnread != "off" || b.Order != 1 {
-		t.Fatalf("bundle = %+v", b)
+		t.Fatalf("saved search = %+v", b)
 	}
 	b.Name = "y"
-	b2, err := e.svc.SaveBundle(ctx, b)
+	b2, err := e.svc.SaveSavedSearch(ctx, b)
 	if err != nil || b2.Name != "y" || b2.Order != 1 {
 		t.Fatalf("update = %+v, %v", b2, err)
 	}

@@ -73,7 +73,7 @@ func AndAll(xs ...Expr) Expr {
 }
 
 // String returns the canonical S-expression form of e, used by tests and
-// stored bundles. It is unambiguous and fully parenthesised:
+// stored saved searches. It is unambiguous and fully parenthesised:
 //
 //	word        -> word            (bare term)
 //	"a b"       -> "a b"           (phrase, Go-quoted)

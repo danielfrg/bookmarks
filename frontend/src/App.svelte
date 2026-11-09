@@ -5,7 +5,7 @@
     ApiError,
     type ListParams,
     type Bookmark,
-    type Bundle,
+    type SavedSearch,
     type Settings,
     type Tag,
   } from "./lib/api.ts";
@@ -15,7 +15,7 @@
   import EditModal from "./EditModal.svelte";
   import ReaderPage from "./ReaderPage.svelte";
   import BookmarkList from "./BookmarkList.svelte";
-  import BundlesPage from "./BundlesPage.svelte";
+  import SavedSearchesPage from "./SavedSearchesPage.svelte";
   import SettingsPage from "./SettingsPage.svelte";
   import TagsPage from "./TagsPage.svelte";
   import SidePanel from "./SidePanel.svelte";
@@ -25,7 +25,7 @@
   let view = $state(readView(new URL(window.location.href)));
   let pageSize = $state(30);
   let tags = $state<Tag[]>([]);
-  let bundles = $state<Bundle[]>([]);
+  let savedSearches = $state<SavedSearch[]>([]);
   let items = $state<Bookmark[]>([]);
   let count = $state(0);
   let status = $state<"loading" | "ready" | "error">("loading");
@@ -136,7 +136,7 @@
 
   async function loadSide() {
     try {
-      [tags, bundles] = await Promise.all([api.tags(), api.bundles()]);
+      [tags, savedSearches] = await Promise.all([api.tags(), api.savedSearches()]);
       sideStatus = "ready";
     } catch {
       // The side panel is secondary, but say so rather than show an empty library.
@@ -178,10 +178,10 @@
       })
       .catch((e: unknown) => {
         if (ctrl.signal.aborted) return;
-        if (e instanceof ApiError && e.status === 404 && view.bundle) {
-          // The active bundle was deleted elsewhere: drop it and say so.
-          notice = "That bundle no longer exists.";
-          navigate({ bundle: null }, { replace: true });
+        if (e instanceof ApiError && e.status === 404 && view.saved) {
+          // The active saved search was deleted elsewhere: drop it and say so.
+          notice = "That saved search no longer exists.";
+          navigate({ saved: null }, { replace: true });
           return;
         }
         error = e instanceof Error ? e.message : String(e);
@@ -221,12 +221,12 @@
         suggestions={tags.map((t) => t.name)}
       />
     </main>
-    <SidePanel {view} {tags} {bundles} status={sideStatus} open={panelOpen} ontag={onTag} />
+    <SidePanel {view} {tags} {savedSearches} status={sideStatus} open={panelOpen} ontag={onTag} />
   </div>
 {:else if view.pageName === "tags"}
   <TagsPage onchanged={reload} />
-{:else if view.pageName === "bundles"}
-  <BundlesPage onchanged={reload} />
+{:else if view.pageName === "saved"}
+  <SavedSearchesPage onchanged={reload} />
 {:else}
   <SettingsPage onsettings={applySettings} onchanged={reload} />
 {/if}

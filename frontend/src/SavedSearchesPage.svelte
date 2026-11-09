@@ -4,10 +4,10 @@
   import ArrowUpIcon from "@lucide/svelte/icons/arrow-up";
   import PlusIcon from "@lucide/svelte/icons/plus";
   import { tick } from "svelte";
-  import { api, type Bundle } from "./lib/api.ts";
+  import { api, type SavedSearch } from "./lib/api.ts";
   import { byOrder, moveItem } from "./lib/pages.ts";
   import { navigate } from "./lib/view.ts";
-  import BundleEditor from "./BundleEditor.svelte";
+  import SavedSearchEditor from "./SavedSearchEditor.svelte";
   import PageHeader from "./PageHeader.svelte";
 
   interface Props {
@@ -15,15 +15,15 @@
   }
   let { onchanged }: Props = $props();
 
-  let bundles = $state<Bundle[]>([]);
+  let savedSearches = $state<SavedSearch[]>([]);
   let tagNames = $state<string[]>([]);
   let status = $state<"loading" | "ready" | "error">("loading");
   let loadError = $state("");
   let actionError = $state("");
   let busy = $state(false);
   let deleting = $state<number | null>(null);
-  // undefined: closed; null: new; Bundle: editing.
-  let editing = $state<Bundle | null | undefined>(undefined);
+  // undefined: closed; null: new; SavedSearch: editing.
+  let editing = $state<SavedSearch | null | undefined>(undefined);
   let trigger: HTMLElement | null = null;
 
   let attempt = $state(0);
@@ -32,10 +32,10 @@
     const ctrl = new AbortController();
     status = "loading";
     api
-      .bundles()
+      .savedSearches()
       .then((b) => {
         if (ctrl.signal.aborted) return;
-        bundles = byOrder(b);
+        savedSearches = byOrder(b);
         status = "ready";
       })
       .catch((e: unknown) => {
@@ -61,16 +61,16 @@
   }
 
   async function refresh() {
-    bundles = byOrder(await api.bundles());
+    savedSearches = byOrder(await api.savedSearches());
   }
   async function move(index: number, dir: -1 | 1) {
     if (busy) return;
-    const ids = bundles.map((b) => b.id);
+    const ids = savedSearches.map((b) => b.id);
     const next = moveItem(ids, index, dir);
     busy = true;
     actionError = "";
     try {
-      await api.reorderBundles(next);
+      await api.reorderSavedSearches(next);
       await refresh();
       onchanged();
       const moved = ids[index];
@@ -85,7 +85,7 @@
       busy = false;
     }
   }
-  function startDelete(b: Bundle) {
+  function startDelete(b: SavedSearch) {
     actionError = "";
     deleting = b.id;
     void focusSel(".confirm-cancel");
@@ -95,14 +95,14 @@
     deleting = null;
     if (id !== null) void focusSel(`.delete-${id}`);
   }
-  async function doDelete(b: Bundle) {
+  async function doDelete(b: SavedSearch) {
     if (busy) return;
     busy = true;
     actionError = "";
     try {
-      await api.deleteBundle(b.id);
+      await api.deleteSavedSearch(b.id);
       deleting = null;
-      bundles = bundles.filter((x) => x.id !== b.id);
+      savedSearches = savedSearches.filter((x) => x.id !== b.id);
       onchanged();
     } catch (e) {
       actionError = message(e);
@@ -110,7 +110,7 @@
       busy = false;
     }
   }
-  function open(b: Bundle | null, e: Event) {
+  function open(b: SavedSearch | null, e: Event) {
     trigger = e.currentTarget as HTMLElement;
     editing = b;
   }
@@ -128,9 +128,9 @@
     }
     void closeEditor();
   }
-  function describe(b: Bundle): string {
+  function describe(b: SavedSearch): string {
     const parts: string[] = [];
-    if (b.search) parts.push(b.search);
+    if (b.query) parts.push(b.query);
     if (b.any_tags.length) parts.push(`any: ${b.any_tags.map((t) => "#" + t).join(" ")}`);
     if (b.all_tags.length) parts.push(`all: ${b.all_tags.map((t) => "#" + t).join(" ")}`);
     if (b.excluded_tags.length) parts.push(`not: ${b.excluded_tags.map((t) => "#" + t).join(" ")}`);
@@ -140,32 +140,32 @@
 </script>
 
 <main class="main page">
-  <PageHeader title="Bundles">
+  <PageHeader title="Saved searches">
     {#if status === "ready"}
       <Button tone="info" surface="solid" onclick={(e) => open(null, e)}
-        ><PlusIcon size={14} aria-hidden="true" /> New bundle</Button
+        ><PlusIcon size={14} aria-hidden="true" /> New saved search</Button
       >
     {/if}
   </PageHeader>
   {#if status === "loading"}
-    <div class="center"><Spinner label="Loading bundles" /></div>
+    <div class="center"><Spinner label="Loading saved searches" /></div>
   {:else if status === "error"}
-    <EmptyState title="Could not load bundles" description={loadError}>
+    <EmptyState title="Could not load saved searches" description={loadError}>
       <Button onclick={() => attempt++}>Retry</Button>
     </EmptyState>
   {:else}
     {#if actionError}<p class="notice error" role="alert">{actionError}</p>{/if}
-    {#if bundles.length === 0}
+    {#if savedSearches.length === 0}
       <EmptyState
-        title="No bundles yet"
-        description="A bundle saves a search with tag rules so you can reopen it in one click."
+        title="No saved searches yet"
+        description="A saved search saves a search with tag rules so you can reopen it in one click."
       >
-        <Button tone="info" surface="solid" onclick={(e) => open(null, e)}>New bundle</Button>
+        <Button tone="info" surface="solid" onclick={(e) => open(null, e)}>New saved search</Button>
       </EmptyState>
     {:else}
-      <ul class="bundle-rows">
-        {#each bundles as b, i (b.id)}
-          <li class="bundle-row">
+      <ul class="saved-rows">
+        {#each savedSearches as b, i (b.id)}
+          <li class="saved-row">
             <span class="reorder">
               <IconButton
                 class="move-{b.id}-up"
@@ -176,18 +176,19 @@
               <IconButton
                 class="move-{b.id}-down"
                 ariaLabel="Move {b.name} down"
-                disabled={busy || i === bundles.length - 1}
+                disabled={busy || i === savedSearches.length - 1}
                 onclick={() => move(i, 1)}
                 ><ArrowDownIcon size={14} aria-hidden="true" /></IconButton
               >
             </span>
-            <div class="bundle-main">
+            <div class="saved-main">
               <button
                 type="button"
                 class="name-link"
-                onclick={() => navigate({ pageName: "list", bundle: b.id, q: "" })}>{b.name}</button
+                onclick={() => navigate({ pageName: "list", saved: b.id, q: "" })}>{b.name}</button
               >
-              {#if describe(b)}<span class="small muted mono bundle-desc">{describe(b)}</span>{/if}
+              {#if describe(b)}<span class="small muted mono saved search-desc">{describe(b)}</span
+                >{/if}
             </div>
             <span class="row-actions">
               {#if deleting === b.id}
@@ -219,5 +220,10 @@
 </main>
 
 {#if editing !== undefined}
-  <BundleEditor bundle={editing} suggestions={tagNames} onsaved={saved} onclose={closeEditor} />
+  <SavedSearchEditor
+    savedSearch={editing}
+    suggestions={tagNames}
+    onsaved={saved}
+    onclose={closeEditor}
+  />
 {/if}

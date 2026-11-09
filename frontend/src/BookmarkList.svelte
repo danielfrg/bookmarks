@@ -138,7 +138,7 @@
 
   const pageSelected = $derived(items.length > 0 && items.every((b) => selected.has(b.id)));
   const selectedCount = $derived(allMatching ? count : selected.size);
-  const canSelectAll = $derived(view.bundle === null);
+  const canSelectAll = $derived(view.saved === null);
   const canDeleteSelection = $derived(
     bulkRequest({ ids: [...selected], allMatching }, view, "delete") !== null,
   );
@@ -201,7 +201,7 @@
   const activeTags = $derived(activeTagsOf(view.q));
   const first = $derived((view.page - 1) * pageSize + 1);
   const last = $derived(Math.min(count, (view.page - 1) * pageSize + items.length));
-  const hasFilters = $derived(view.q !== "" || view.bundle !== null);
+  const hasFilters = $derived(view.q !== "" || view.saved !== null);
   // Empty active list: is the whole library empty, or only archived? (one cheap request)
   const maybeEmptyLibrary = $derived(
     status === "ready" && count === 0 && !hasFilters && view.filter === "active",
@@ -307,7 +307,7 @@
       description={hasFilters ? "Nothing matches this search." : `No ${view.filter} bookmarks.`}
     >
       {#if hasFilters}
-        <Button onclick={() => navigate({ q: "", bundle: null, page: 1 })}>Clear search</Button>
+        <Button onclick={() => navigate({ q: "", saved: null, page: 1 })}>Clear search</Button>
       {/if}
     </EmptyState>
   {:else}
@@ -328,9 +328,9 @@
           {:else}
             <span
               class="muted"
-              title="Bulk actions on a whole bundle are not supported; select rows instead."
+              title="Bulk actions on a whole saved search are not supported; select rows instead."
             >
-              Select all matching is unavailable in a bundle
+              Select all matching is unavailable in a saved search
             </span>
           {/if}
         {/if}

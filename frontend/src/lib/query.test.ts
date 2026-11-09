@@ -97,7 +97,7 @@ const baseView = {
   q: "",
   filter: "active",
   sort: "added_desc",
-  bundle: null,
+  saved: null,
   page: 1,
   view: null,
   edit: null,
@@ -144,9 +144,9 @@ test("bulk delete all matching is disabled without a filter", () => {
   assert.notEqual(bulkRequest({ ids: [1], allMatching: false }, baseView, "delete"), null);
 });
 
-test("bulkRequest refuses all matching inside a bundle", () => {
+test("bulkRequest refuses all matching inside a saved search", () => {
   assert.equal(
-    bulkRequest({ ids: [], allMatching: true }, { ...baseView, bundle: 4 }, "read"),
+    bulkRequest({ ids: [], allMatching: true }, { ...baseView, saved: 4 }, "read"),
     null,
   );
 });

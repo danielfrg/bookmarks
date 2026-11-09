@@ -27,22 +27,22 @@ func (s *Service) DeleteTag(ctx context.Context, id int64) error {
 	return s.st.DeleteTag(ctx, id)
 }
 
-// Bundles lists the bundles in their display order.
-func (s *Service) Bundles(ctx context.Context) ([]bookmarks.Bundle, error) {
-	return s.st.ListBundles(ctx)
+// SavedSearches lists the saved searches in their display order.
+func (s *Service) SavedSearches(ctx context.Context) ([]bookmarks.SavedSearch, error) {
+	return s.st.ListSavedSearches(ctx)
 }
 
-// Bundle returns one bundle.
-func (s *Service) Bundle(ctx context.Context, id int64) (bookmarks.Bundle, error) {
-	return s.st.GetBundle(ctx, id)
+// SavedSearch returns one saved search.
+func (s *Service) SavedSearch(ctx context.Context, id int64) (bookmarks.SavedSearch, error) {
+	return s.st.GetSavedSearch(ctx, id)
 }
 
-// SaveBundle creates b (ID 0) or replaces the editable fields of bundle b.ID.
+// SaveSavedSearch creates b (ID 0) or replaces the editable fields of saved search b.ID.
 // Tag lists are normalized; FilterUnread defaults to "off".
-func (s *Service) SaveBundle(ctx context.Context, b bookmarks.Bundle) (bookmarks.Bundle, error) {
+func (s *Service) SaveSavedSearch(ctx context.Context, b bookmarks.SavedSearch) (bookmarks.SavedSearch, error) {
 	b.Name = strings.TrimSpace(b.Name)
 	if b.Name == "" {
-		return bookmarks.Bundle{}, invalid("name", "is required")
+		return bookmarks.SavedSearch{}, invalid("name", "is required")
 	}
 	if b.FilterUnread == "" {
 		b.FilterUnread = "off"
@@ -50,26 +50,26 @@ func (s *Service) SaveBundle(ctx context.Context, b bookmarks.Bundle) (bookmarks
 	switch b.FilterUnread {
 	case "off", "yes", "no":
 	default:
-		return bookmarks.Bundle{}, invalid("filter_unread", `must be "off", "yes" or "no"`)
+		return bookmarks.SavedSearch{}, invalid("filter_unread", `must be "off", "yes" or "no"`)
 	}
-	if _, err := parseQuery("search", b.Search); err != nil {
-		return bookmarks.Bundle{}, err
+	if _, err := parseQuery("query", b.Query); err != nil {
+		return bookmarks.SavedSearch{}, err
 	}
 	b.AnyTags = bookmarks.NormalizeTags(b.AnyTags)
 	b.AllTags = bookmarks.NormalizeTags(b.AllTags)
 	b.ExcludedTags = bookmarks.NormalizeTags(b.ExcludedTags)
-	if err := s.st.SaveBundle(ctx, &b); err != nil {
-		return bookmarks.Bundle{}, err
+	if err := s.st.SaveSavedSearch(ctx, &b); err != nil {
+		return bookmarks.SavedSearch{}, err
 	}
-	return s.st.GetBundle(ctx, b.ID)
+	return s.st.GetSavedSearch(ctx, b.ID)
 }
 
-// DeleteBundle removes bundle id.
-func (s *Service) DeleteBundle(ctx context.Context, id int64) error {
-	return s.st.DeleteBundle(ctx, id)
+// DeleteSavedSearch removes saved search id.
+func (s *Service) DeleteSavedSearch(ctx context.Context, id int64) error {
+	return s.st.DeleteSavedSearch(ctx, id)
 }
 
-// ReorderBundles sets the bundle order to the order of ids.
-func (s *Service) ReorderBundles(ctx context.Context, ids []int64) error {
-	return s.st.ReorderBundles(ctx, ids)
+// ReorderSavedSearches sets the saved search order to the order of ids.
+func (s *Service) ReorderSavedSearches(ctx context.Context, ids []int64) error {
+	return s.st.ReorderSavedSearches(ctx, ids)
 }

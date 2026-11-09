@@ -1,4 +1,4 @@
-import type { Bundle, ImportResult, Settings, Tag } from "./api.ts";
+import type { SavedSearch, ImportResult, Settings, Tag } from "./api.ts";
 
 export const DEFAULT_ITEMS_PER_PAGE = 30;
 export const MIN_ITEMS_PER_PAGE = 10;
@@ -37,8 +37,8 @@ export function filterTags(tags: Tag[], text: string): Tag[] {
   return needle ? tags.filter((t) => t.name.toLowerCase().includes(needle)) : tags;
 }
 
-export function byOrder(bundles: Bundle[]): Bundle[] {
-  return [...bundles].sort((a, b) => a.order - b.order || a.id - b.id);
+export function byOrder(savedSearches: SavedSearch[]): SavedSearch[] {
+  return [...savedSearches].sort((a, b) => a.order - b.order || a.id - b.id);
 }
 
 export function importSummary(r: ImportResult): string {

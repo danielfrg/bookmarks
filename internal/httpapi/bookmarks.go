@@ -68,13 +68,13 @@ type idInput struct {
 }
 
 type listInput struct {
-	Q      string `query:"q"`
-	Scope  string `query:"scope" doc:"active (default), archived or all"`
-	Unread string `query:"unread" doc:"yes or no"`
-	Sort   string `query:"sort"`
-	Bundle int64  `query:"bundle" minimum:"0"`
-	Limit  int    `query:"limit" minimum:"0"`
-	Offset int    `query:"offset" minimum:"0"`
+	Q           string `query:"q"`
+	Scope       string `query:"scope" doc:"active (default), archived or all"`
+	Unread      string `query:"unread" doc:"yes or no"`
+	Sort        string `query:"sort"`
+	SavedSearch int64  `query:"saved_search" minimum:"0"`
+	Limit       int    `query:"limit" minimum:"0"`
+	Offset      int    `query:"offset" minimum:"0"`
 }
 
 type listOutput struct {
@@ -162,7 +162,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 	huma.Register(api, huma.Operation{OperationID: "list-bookmarks", Method: http.MethodGet, Path: "/_/api/bookmarks", Summary: "Search bookmarks"},
 		func(ctx context.Context, in *listInput) (*listOutput, error) {
 			res, err := svc.Search(ctx, service.SearchInput{
-				Q: in.Q, Scope: in.Scope, Unread: in.Unread, Sort: in.Sort, BundleID: in.Bundle,
+				Q: in.Q, Scope: in.Scope, Unread: in.Unread, Sort: in.Sort, SavedSearchID: in.SavedSearch,
 				Limit: in.Limit, Offset: in.Offset, Snippets: in.Q != "",
 			})
 			if err != nil {
