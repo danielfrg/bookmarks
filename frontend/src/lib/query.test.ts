@@ -1,6 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { displayTitle, groupTags, hostOf, toggleTagInQuery } from "./query.ts";
+import {
+  activeTagsOf,
+  syncSearchText,
+  displayTitle,
+  formatBytes,
+  groupTags,
+  hostOf,
+  toggleTagInQuery,
+} from "./query.ts";
 
 test("toggleTagInQuery adds and removes tag tokens", () => {
   assert.equal(toggleTagInQuery("", "go"), "#go");
@@ -42,4 +50,32 @@ test("groupTags buckets A-Z with a # bucket for non-letters", () => {
       ["#", ["2fa", "_x"]],
     ],
   );
+});
+
+test("activeTagsOf lists lower-cased #tag tokens", () => {
+  assert.deepEqual(activeTagsOf('foo #Go "x y" #sql #'), ["go", "sql"]);
+  assert.deepEqual(activeTagsOf(""), []);
+});
+
+test("syncSearchText only follows committed query changes", () => {
+  // Typing while the committed query is unchanged is never overwritten.
+  assert.equal(syncSearchText("", "", "foo "), "foo ");
+  assert.equal(syncSearchText("", "", "foo bar"), "foo bar");
+  // Debounce commits the trimmed text: keep the trailing space.
+  assert.equal(syncSearchText("", "foo", "foo "), "foo ");
+  // External change (tag click, back/forward) replaces the text.
+  assert.equal(syncSearchText("foo", "foo #go", "foo"), "foo #go");
+  assert.equal(syncSearchText("foo", "", "foo"), "");
+});
+
+test("formatBytes uses base 1024 with one decimal from KB up", () => {
+  assert.equal(formatBytes(0), "0 B");
+  assert.equal(formatBytes(512), "512 B");
+  assert.equal(formatBytes(1024), "1.0 KB");
+  assert.equal(formatBytes(2.4 * 1024 * 1024), "2.4 MB");
+  assert.equal(formatBytes(1.1 * 1024 ** 3), "1.1 GB");
+  assert.equal(formatBytes(1023), "1023 B");
+  assert.equal(formatBytes(-5), "0 B");
+  assert.equal(formatBytes(1048575), "1.0 MB");
+  assert.equal(formatBytes(1048575 - 1024), "1023.0 KB");
 });

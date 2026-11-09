@@ -42,3 +42,33 @@ export function groupTags(tags: Tag[]): { letter: string; tags: Tag[] }[] {
     return { letter, tags: list };
   });
 }
+
+/** Lower-cased tag names referenced as "#tag" tokens in the query. */
+export function activeTagsOf(q: string): string[] {
+  return q
+    .split(/\s+/)
+    .filter((t) => t.startsWith("#") && t.length > 1)
+    .map((t) => t.slice(1).toLowerCase());
+}
+
+/**
+ * The search box text after the committed query changes. Typing that has not
+ * been committed yet (or differs only by surrounding whitespace) is kept.
+ */
+export function syncSearchText(prevQ: string, nextQ: string, text: string): string {
+  if (nextQ === prevQ) return text;
+  return nextQ === text.trim() ? text : nextQ;
+}
+
+/** "0 B", "512 B", "1.0 KB", "2.4 MB", "1.1 GB" (base 1024). */
+export function formatBytes(n: number): string {
+  if (!Number.isFinite(n) || n < 1024) return `${Math.max(0, Math.round(n || 0))} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let v = n / 1024;
+  let i = 0;
+  while (i < units.length - 1 && Number(v.toFixed(1)) >= 1024) {
+    v /= 1024;
+    i++;
+  }
+  return `${v.toFixed(1)} ${units[i]}`;
+}
