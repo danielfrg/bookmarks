@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/danielfrg/bookmarks/internal/mcp"
 )
 
 const defaultFaviconProvider = "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url={url}&size=32"
@@ -58,11 +60,11 @@ func loadSettings() (Settings, error) {
 	}
 	s.APIToken = token
 
-	for _, host := range strings.Split(os.Getenv("BOOKMARKS_MCP_ALLOWED_HOSTS"), ",") {
-		if host = strings.TrimSpace(host); host != "" {
-			s.MCPAllowedHosts = append(s.MCPAllowedHosts, host)
-		}
+	hosts, err := mcp.ParseAllowedHosts(os.Getenv("BOOKMARKS_MCP_ALLOWED_HOSTS"))
+	if err != nil {
+		return s, fmt.Errorf("BOOKMARKS_MCP_ALLOWED_HOSTS: %w", err)
 	}
+	s.MCPAllowedHosts = hosts
 
 	mb, err := strconv.ParseInt(env("BOOKMARKS_MAX_UPLOAD_MB", "100"), 10, 64)
 	if err != nil || mb <= 0 || mb > (1<<62)>>20 {

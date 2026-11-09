@@ -140,3 +140,11 @@ func (s *SQLite) DeleteBookmark(ctx context.Context, id int64) error {
 	}
 	return tx.Commit()
 }
+
+// CountBookmarksWithPreview returns how many bookmarks use the preview file
+// name (preview files are shared by bookmarks with the same image URL).
+func (s *SQLite) CountBookmarksWithPreview(ctx context.Context, name string) (int, error) {
+	var n int
+	err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM bookmarks WHERE preview_file=?`, name).Scan(&n)
+	return n, err
+}

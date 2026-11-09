@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"testing/fstest"
 )
@@ -44,5 +45,18 @@ func TestOpenAPIServed(t *testing.T) {
 	h := NewHandler(fstest.MapFS{}, Deps{Ping: func(context.Context) error { return nil }})
 	if w := get(h, "/_/api/openapi.json"); w.Code != 200 {
 		t.Fatal(w.Code)
+	}
+}
+
+func TestMCPMountedOutsideAPIGuard(t *testing.T) {
+	e := newTestEnv(t)
+	r := httptest.NewRequest("POST", "/_/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"ping"}`))
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("Accept", "application/json, text/event-stream")
+	r.Host = "localhost"
+	w := httptest.NewRecorder()
+	e.h.ServeHTTP(w, r)
+	if w.Code != 200 {
+		t.Fatalf("%d %s", w.Code, w.Body)
 	}
 }

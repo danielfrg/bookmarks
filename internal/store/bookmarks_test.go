@@ -125,3 +125,18 @@ func TestDeleteBookmarkCascades(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestCountBookmarksWithPreview(t *testing.T) {
+	s, ctx := openTest(t), context.Background()
+	for _, u := range []string{"https://a.example", "https://b.example"} {
+		if err := s.CreateBookmark(ctx, sample(u)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n, err := s.CountBookmarksWithPreview(ctx, "p.png"); err != nil || n != 2 {
+		t.Fatalf("count = %d, %v; want 2", n, err)
+	}
+	if n, err := s.CountBookmarksWithPreview(ctx, "other.png"); err != nil || n != 0 {
+		t.Fatalf("count = %d, %v; want 0", n, err)
+	}
+}

@@ -59,7 +59,7 @@ func TestLoadSettingsRejectsBadPublicURL(t *testing.T) {
 func TestLoadSettingsOtherValues(t *testing.T) {
 	clearEnv(t)
 	t.Setenv("BOOKMARKS_DATA_DIR", "/srv/bm")
-	t.Setenv("BOOKMARKS_MCP_ALLOWED_HOSTS", "a.example, b.example ,")
+	t.Setenv("BOOKMARKS_MCP_ALLOWED_HOSTS", "a.example, b.example")
 	t.Setenv("BOOKMARKS_MAX_UPLOAD_MB", "5")
 	t.Setenv("BOOKMARKS_ALLOW_PRIVATE_FETCH", "true")
 	s, err := loadSettings()
@@ -71,7 +71,7 @@ func TestLoadSettingsOtherValues(t *testing.T) {
 		t.Fatalf("%+v", s)
 	}
 	for name, value := range map[string]string{
-		"BOOKMARKS_MAX_UPLOAD_MB": "0", "BOOKMARKS_ALLOW_PRIVATE_FETCH": "maybe", "BOOKMARKS_ADDR": "nohost",
+		"BOOKMARKS_MAX_UPLOAD_MB": "0", "BOOKMARKS_ALLOW_PRIVATE_FETCH": "maybe", "BOOKMARKS_ADDR": "nohost", "BOOKMARKS_MCP_ALLOWED_HOSTS": "https://a.example",
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Setenv(name, value)
