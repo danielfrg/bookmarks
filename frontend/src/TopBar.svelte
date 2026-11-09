@@ -110,12 +110,6 @@
           value={view.filter}
           onchange={(v) => navigate({ filter: v as Filter, pageName: "list", page: 1 })}
         />
-        <SelectDropdown
-          title="Sort"
-          options={sorts}
-          value={view.sort}
-          onchange={(v) => navigate({ sort: v, pageName: "list", page: 1 })}
-        />
       {/if}
       <span class="grow"></span>
       {#if onList}
@@ -134,6 +128,14 @@
       >
         <PlusIcon size={14} /> Add
       </Button>
+      {#if onList}
+        <SelectDropdown
+          title="Sort"
+          options={sorts}
+          value={view.sort}
+          onchange={(v) => navigate({ sort: v, pageName: "list", page: 1 })}
+        />
+      {/if}
       <Button
         size="sm"
         class="help-trigger"

@@ -225,6 +225,19 @@
     return () => ctrl.abort();
   });
 
+  async function markRead(b: Bookmark) {
+    busyId = b.id;
+    actionError = "";
+    try {
+      await api.update(b.id, { unread: false });
+      onchanged();
+    } catch (e) {
+      actionError = e instanceof Error ? e.message : String(e);
+    } finally {
+      busyId = null;
+    }
+  }
+
   async function archive(b: Bookmark) {
     busyId = b.id;
     actionError = "";
@@ -350,6 +363,7 @@
           onview={() => navigate({ view: b.id })}
           onedit={() => navigate({ edit: b.id })}
           onarchive={() => archive(b)}
+          onmarkread={() => markRead(b)}
           ondelete={(el) => {
             confirmTrigger = el;
             confirming = b;

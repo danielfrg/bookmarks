@@ -66,6 +66,11 @@ select {
   flex-wrap: wrap;
   min-width: 0;
 }
+/* The filter pills (list page only) are a few px taller than the search box;
+ * reserve their height on every page so the header doesn't shift. */
+.topbar-row.controls {
+  min-height: 31px;
+}
 .wordmark {
   background: none;
   border: 0;
@@ -115,9 +120,9 @@ select {
   padding: 0.25rem 0;
 }
 .main.page {
-  /* Same width as .layout and the header so page content lines up. */
-  /* 80rem of content plus the header's 1rem side padding. */
-  max-width: 82rem;
+  /* Tags, saved searches and settings share one centered column, sized for
+   * the settings nav + section (200px + 672px) plus side padding. */
+  max-width: 57rem;
   margin: 0 auto;
   padding: 1rem 1rem 2rem;
 }
@@ -846,17 +851,6 @@ select {
   margin: 0;
   font-size: var(--font-size-lg, 1.125rem);
 }
-.back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
-  text-decoration: none;
-}
-.back-link:hover {
-  color: var(--text-primary);
-}
 .page-tools {
   margin-bottom: 0.75rem;
 }
@@ -895,6 +889,31 @@ td.row-actions {
   display: table-cell;
   text-align: right;
   white-space: nowrap;
+}
+/* Fixed column widths so swapping a row into rename or delete-confirm mode
+ * doesn't resize the columns. */
+.tags-table {
+  table-layout: fixed;
+}
+.tags-table .col-num {
+  width: 6rem;
+}
+.tags-table .col-actions {
+  width: 20rem;
+}
+.tags-table td.row-actions {
+  white-space: normal;
+}
+.tags-table td:first-child {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 720px) {
+  .tags-table .col-num {
+    width: 3.5rem;
+  }
+  .tags-table .col-actions {
+    width: 10.5rem;
+  }
 }
 td.row-actions > * {
   margin-left: 0.375rem;
@@ -1006,10 +1025,6 @@ td.row-actions > * {
   color: var(--text-secondary);
 }
 
-/* The settings nav + section column (200px + 672px) is centered as a block. */
-.main.page.settings-page {
-  max-width: 57rem;
-}
 /* Settings embedded in a page: components.css styles .kit-settings as a
  * full-screen app shell (sidebar-colored background, raised inset panel).
  * Here it sits on the page background, so flatten the shell and keep only

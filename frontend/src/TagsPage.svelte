@@ -155,7 +155,12 @@
     {#if shown.length === 0}
       <p class="muted">No tags match “{filter}”.</p>
     {:else}
-      <table class="data-table">
+      <table class="data-table tags-table">
+        <colgroup>
+          <col />
+          <col class="col-num" />
+          <col class="col-actions" />
+        </colgroup>
         <thead>
           <tr
             ><th scope="col">Name</th><th scope="col" class="num">Bookmarks</th><th scope="col"

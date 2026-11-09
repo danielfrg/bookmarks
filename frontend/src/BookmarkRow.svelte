@@ -15,6 +15,7 @@
     onview: () => void;
     onedit: () => void;
     onarchive: () => void;
+    onmarkread: () => void;
     ondelete: (trigger: HTMLElement) => void;
   }
   let {
@@ -29,6 +30,7 @@
     onview,
     onedit,
     onarchive,
+    onmarkread,
     ondelete,
   }: Props = $props();
 </script>
@@ -94,6 +96,15 @@
           data-edit-trigger={b.id}
           onclick={onedit}>Edit</button
         >
+        {#if b.unread}
+          <button
+            type="button"
+            class="act"
+            disabled={busy}
+            aria-label="Mark {displayTitle(b)} as read"
+            onclick={onmarkread}>Mark read</button
+          >
+        {/if}
         <button
           type="button"
           class="act"

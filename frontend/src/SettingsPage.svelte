@@ -38,7 +38,6 @@
   let active = $state("general");
 
   let pending = $state(0);
-  const saving = $derived(pending > 0);
   let queue: Promise<void> = Promise.resolve();
   let saved = $state(false);
   let saveError = $state("");
@@ -168,9 +167,9 @@
 </script>
 
 <main class="main page settings-page">
-  <PageHeader title="Settings" hideTitle>
+  <PageHeader title="Settings">
     <span class="save-status small" role="status" aria-live="polite">
-      {#if saving}<Spinner size={12} label="Saving" /> Saving…{:else if saved}Saved{/if}
+      {#if saved}Saved{/if}
     </span>
   </PageHeader>
   {#if status === "loading"}

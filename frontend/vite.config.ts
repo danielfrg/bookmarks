@@ -11,6 +11,8 @@ export default defineConfig({
   // Kit UI ships Svelte/TypeScript source; compile it with the app.
   optimizeDeps: { exclude: ["@kenn-io/kit-ui"] },
   base: "/assets/",
+  // Emit files at /assets/<hash>.js rather than /assets/assets/<hash>.js.
+  build: { assetsDir: "" },
   resolve: { alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) } },
   server: {
     host: "127.0.0.1",
