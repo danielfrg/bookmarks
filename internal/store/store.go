@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,7 +39,17 @@ func Open(path string) (*SQLite, error) {
 			return nil, fmt.Errorf("create database directory: %w", err)
 		}
 	}
-	db, err := sql.Open("sqlite", path)
+	// Pragmas are part of the DSN so every pooled connection gets them.
+	dsn := "file::memory:"
+	if path != ":memory:" {
+		abs, err := filepath.Abs(path)
+		if err != nil {
+			return nil, fmt.Errorf("resolve database path: %w", err)
+		}
+		dsn = (&url.URL{Scheme: "file", Path: filepath.ToSlash(abs)}).String()
+	}
+	dsn += "?_pragma=busy_timeout(5000)&_pragma=journal_mode(DELETE)&_pragma=synchronous(FULL)&_pragma=foreign_keys(1)"
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -47,11 +58,6 @@ func Open(path string) (*SQLite, error) {
 	fail := func(err error) (*SQLite, error) { db.Close(); return nil, fmt.Errorf("open database: %w", err) }
 	if err := db.Ping(); err != nil {
 		return fail(err)
-	}
-	for _, statement := range []string{"PRAGMA busy_timeout=5000", "PRAGMA journal_mode=DELETE", "PRAGMA synchronous=FULL", "PRAGMA foreign_keys=ON"} {
-		if _, err := db.Exec(statement); err != nil {
-			return fail(err)
-		}
 	}
 	sub, err := fs.Sub(migrations, "migrations/sqlite")
 	if err != nil {

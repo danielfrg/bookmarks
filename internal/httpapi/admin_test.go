@@ -222,3 +222,16 @@ func TestNetscapeImportTooLarge(t *testing.T) {
 		t.Fatal(w.Code, w.Body.String()[:min(200, w.Body.Len())])
 	}
 }
+
+func TestExportNetscapeSearchFailureIsErrorNotTruncated(t *testing.T) {
+	e := newTestEnv(t)
+	e.create(t, "https://a.example/")
+	e.st.Close() // every search now fails
+	w := e.do("GET", "/_/api/export/netscape", nil)
+	if w.Code != 500 {
+		t.Fatalf("status = %d, want 500", w.Code)
+	}
+	if strings.Contains(w.Body.String(), "NETSCAPE") || w.Header().Get("Content-Disposition") != "" {
+		t.Fatalf("partial export: %v %q", w.Header(), w.Body.String())
+	}
+}

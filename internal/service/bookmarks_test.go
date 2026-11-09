@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -399,5 +402,54 @@ func TestFindByURL(t *testing.T) {
 	var ve *ValidationError
 	if _, err := e.svc.FindByURL(ctx, "ftp://x"); !errors.As(err, &ve) {
 		t.Fatalf("got %v", err)
+	}
+}
+
+// blindStore hides the existing bookmark from the first URL lookup, as if a
+// concurrent save created it between the lookup and the insert.
+type blindStore struct {
+	Store
+	calls int
+}
+
+func (b *blindStore) GetBookmarkByURL(ctx context.Context, u string) (bookmarks.Bookmark, error) {
+	b.calls++
+	if b.calls == 1 {
+		return bookmarks.Bookmark{}, store.ErrNotFound
+	}
+	return b.Store.GetBookmarkByURL(ctx, u)
+}
+
+func TestSaveConcurrentCreateMergesIntoExisting(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	first, _, err := e.svc.Save(ctx, SaveInput{URL: "https://race.example/", Title: ptr("one"), Capture: CaptureNone})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.svc.st = &blindStore{Store: e.svc.st}
+	b, created, err := e.svc.Save(ctx, SaveInput{URL: "https://race.example/", Notes: ptr("two"), Capture: CaptureNone})
+	if err != nil || created {
+		t.Fatalf("created=%v err=%v, want merge", created, err)
+	}
+	if b.ID != first.ID || b.Title != "one" || b.Notes != "two" {
+		t.Fatalf("merged = %+v", b)
+	}
+}
+
+func TestDeleteRemovesArchiveDirectory(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	b, _, _ := e.svc.Save(ctx, SaveInput{URL: "https://d.example/", Capture: CaptureNone})
+	addFileArchive(t, e, b.ID, "text/html", "../reader/testdata/article.html")
+	dir := filepath.Join(e.dir, "archives", strconv.FormatInt(b.ID, 10))
+	if _, err := os.Stat(dir); err != nil {
+		t.Fatalf("archive dir missing before delete: %v", err)
+	}
+	if err := e.svc.Delete(ctx, b.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(dir); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("archive dir still exists: %v", err)
 	}
 }

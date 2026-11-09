@@ -159,8 +159,23 @@ func (s *Service) extractJob(ctx context.Context, j jobs.Job) error {
 	if err != nil {
 		return err
 	}
+	// Another extract job may have run for a newer archive while this one was
+	// reading; never overwrite its text with older content.
+	put := func(r bookmarks.ReaderText) error {
+		latest, err := s.st.LatestReadableArchive(ctx, b.ID)
+		if err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				return nil // archive deleted meanwhile
+			}
+			return err
+		}
+		if latest.ID != a.ID {
+			return nil
+		}
+		return s.st.PutReaderText(ctx, r)
+	}
 	failed := func(msg string) error {
-		return s.st.PutReaderText(ctx, bookmarks.ReaderText{
+		return put(bookmarks.ReaderText{
 			BookmarkID: b.ID, ArchiveID: a.ID, Status: bookmarks.ReaderFailed, Error: msg, ExtractedAt: s.now(),
 		})
 	}
@@ -181,7 +196,7 @@ func (s *Service) extractJob(ctx context.Context, j jobs.Job) error {
 		s.log.Printf("service: extract archive %d: %v", a.ID, err)
 		return failed("text could not be extracted")
 	}
-	return s.st.PutReaderText(ctx, bookmarks.ReaderText{
+	return put(bookmarks.ReaderText{
 		BookmarkID: b.ID, ArchiveID: a.ID, Status: bookmarks.ReaderOK,
 		Title: res.Title, Markdown: res.Markdown, WordCount: res.WordCount, ExtractedAt: s.now(),
 	})

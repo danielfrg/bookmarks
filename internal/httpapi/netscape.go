@@ -55,11 +55,27 @@ func importNetscape(svc *service.Service) http.HandlerFunc {
 // exportNetscape handles GET /_/api/export/netscape.
 func exportNetscape(svc *service.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("Content-Disposition", `attachment; filename="bookmarks.html"`)
-		if err := svc.ExportNetscape(r.Context(), w); err != nil {
-			// The body is already streaming, so only log (classify does).
-			classify(err)
+		tw := &trackingWriter{ResponseWriter: w}
+		tw.Header().Set("Content-Type", "text/html; charset=utf-8")
+		tw.Header().Set("Content-Disposition", `attachment; filename="bookmarks.html"`)
+		if err := svc.ExportNetscape(r.Context(), tw); err != nil {
+			if tw.wrote {
+				classify(err) // body already streaming: only log
+				return
+			}
+			w.Header().Del("Content-Disposition")
+			writeError(w, err)
 		}
 	}
+}
+
+// trackingWriter records whether any response bytes were written.
+type trackingWriter struct {
+	http.ResponseWriter
+	wrote bool
+}
+
+func (t *trackingWriter) Write(p []byte) (int, error) {
+	t.wrote = true
+	return t.ResponseWriter.Write(p)
 }

@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strings"
+	"unicode"
 
 	"github.com/danielfrg/bookmarks/internal/bookmarks"
 	"github.com/danielfrg/bookmarks/internal/jobs"
+	"github.com/danielfrg/bookmarks/internal/query"
 	"github.com/danielfrg/bookmarks/internal/store"
 )
 
@@ -75,8 +78,14 @@ func (s *Service) Bulk(ctx context.Context, in BulkInput) (int, error) {
 		return 0, invalid("action", "unknown action")
 	}
 
-	if in.Action == "delete" && len(in.IDs) == 0 && in.Query != nil && in.Query.Q == "" && in.Query.Unread == "" {
-		return 0, invalid("query", "must not be empty for delete; send ids instead")
+	if in.Action == "delete" && len(in.IDs) == 0 && in.Query != nil && in.Query.Unread == "" && in.Query.BundleID == 0 {
+		expr, err := parseQuery("query", in.Query.Q)
+		if err != nil {
+			return 0, err
+		}
+		if strings.TrimSpace(in.Query.Q) == "" || matchesEverything(expr) {
+			return 0, invalid("query", "must not be empty for delete; send ids instead")
+		}
 	}
 	ids, err := s.bulkIDs(ctx, in)
 	if err != nil {
@@ -121,4 +130,27 @@ func (s *Service) bulkIDs(ctx context.Context, in BulkInput) ([]int64, error) {
 			return ids, nil
 		}
 	}
+}
+
+// matchesEverything reports whether e selects every bookmark: no expression,
+// terms without letters or digits (they produce no search tokens), or unknown
+// keywords. Such a query must never drive a bulk delete.
+func matchesEverything(e query.Expr) bool {
+	switch v := e.(type) {
+	case nil:
+		return true
+	case query.Term:
+		return !strings.ContainsFunc(v.Text, func(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) })
+	case query.Keyword:
+		switch v.Name {
+		case "unread", "untagged", "basic":
+			return false
+		}
+		return true
+	case query.And:
+		return matchesEverything(v.L) && matchesEverything(v.R)
+	case query.Or:
+		return matchesEverything(v.L) || matchesEverything(v.R)
+	}
+	return false
 }

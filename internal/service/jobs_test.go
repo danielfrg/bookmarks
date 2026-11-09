@@ -316,3 +316,51 @@ func TestWaybackJob(t *testing.T) {
 		t.Fatalf("err = %v, want retryable", err)
 	}
 }
+
+// racingStore runs hook once, right after the first LatestReadableArchive
+// call, to interleave a second job with the first.
+type racingStore struct {
+	Store
+	calls int
+	hook  func()
+}
+
+func (r *racingStore) LatestReadableArchive(ctx context.Context, id int64) (bookmarks.Archive, error) {
+	a, err := r.Store.LatestReadableArchive(ctx, id)
+	r.calls++
+	if r.calls == 1 && r.hook != nil {
+		r.hook()
+	}
+	return a, err
+}
+
+func TestExtractJobDoesNotOverwriteNewerArchiveText(t *testing.T) {
+	for _, tc := range []struct{ name, oldFile, newFile string }{
+		{"older ok write", "article.html", "nav-only.html"},
+		{"older failed write", "nav-only.html", "article.html"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newEnv(t)
+			ctx := context.Background()
+			b, _, _ := e.svc.Save(ctx, SaveInput{URL: "https://a.example", Capture: CaptureNone})
+			addFileArchive(t, e, b.ID, "text/html", "../reader/testdata/"+tc.oldFile)
+			rs := &racingStore{Store: e.svc.st}
+			var newer bookmarks.Archive
+			rs.hook = func() {
+				newer = addFileArchive(t, e, b.ID, "text/html", "../reader/testdata/"+tc.newFile)
+				if err := runJob(t, e, jobs.KindExtract, b.ID); err != nil {
+					t.Error(err)
+				}
+			}
+			e.svc.st = rs
+			// The first job read the older archive; the newer job finishes first.
+			if err := runJob(t, e, jobs.KindExtract, b.ID); err != nil {
+				t.Fatal(err)
+			}
+			r, err := e.st.GetReaderText(ctx, b.ID)
+			if err != nil || r.ArchiveID != newer.ID {
+				t.Fatalf("reader = %+v, %v; want archive %d", r, err, newer.ID)
+			}
+		})
+	}
+}

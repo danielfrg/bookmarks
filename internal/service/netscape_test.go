@@ -134,11 +134,14 @@ func TestImportMergesIntoExisting(t *testing.T) {
 		Notes: ptr("keep notes"), Tags: &[]string{"mine", "shared"}, Archived: ptr(true), Unread: ptr(true), Capture: CaptureNone}); err != nil {
 		t.Fatal(err)
 	}
-	res, err := e.svc.ImportNetscape(ctx, strings.NewReader(`<DL><DT><A HREF="https://m.example/" TAGS="shared,new" TOREAD="0"></A></DL>`))
+	res, err := e.svc.ImportNetscape(ctx, strings.NewReader(`<DL><DT><A HREF="https://m.example/" TAGS="shared,new" TOREAD="0" ADD_DATE="1000000000" LAST_MODIFIED="1000000000"></A></DL>`))
 	if err != nil || res != (ImportResult{Updated: 1}) {
 		t.Fatalf("%+v %v", res, err)
 	}
 	b, _ := e.svc.st.GetBookmarkByURL(ctx, "https://m.example/")
+	if !b.DateAdded.Equal(fixedNow) || !b.DateModified.Equal(fixedNow) {
+		t.Fatalf("dates changed: added %v modified %v", b.DateAdded, b.DateModified)
+	}
 	if strings.Join(b.Tags, ",") != "mine,new,shared" || b.Description != "keep me" || b.Notes != "keep notes" ||
 		b.Title != "T" || !b.Archived || !b.Unread {
 		t.Fatalf("merged = %+v", b)
@@ -151,5 +154,21 @@ func TestBulkDeleteEmptyQueryRejected(t *testing.T) {
 	var ve *ValidationError
 	if !errors.As(err, &ve) {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestBulkDeleteBlankOrEmptyExprRejected(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	b, _, _ := e.svc.Save(ctx, SaveInput{URL: "https://keep.example", Capture: CaptureNone})
+	for _, q := range []string{"   ", "*", "#", "-", "!bogus"} {
+		_, err := e.svc.Bulk(ctx, BulkInput{Action: "delete", Query: &SearchInput{Scope: "all", Q: q}})
+		var ve *ValidationError
+		if !errors.As(err, &ve) {
+			t.Errorf("q=%q: err = %v, want ValidationError", q, err)
+		}
+	}
+	if _, err := e.svc.Get(ctx, b.ID); err != nil {
+		t.Fatalf("bookmark deleted: %v", err)
 	}
 }

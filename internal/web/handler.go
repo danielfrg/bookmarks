@@ -9,7 +9,7 @@ import (
 func Index(w http.ResponseWriter, r *http.Request, assets fs.FS, status int) {
 	data, err := fs.ReadFile(assets, "index.html")
 	if err != nil {
-		http.Error(w, "Frontend is not built. Run just frontend for development or just build for the embedded app.", http.StatusServiceUnavailable)
+		http.Error(w, "Frontend not built. Run `just build`.", http.StatusServiceUnavailable)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

@@ -3,6 +3,9 @@ package service
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -95,19 +98,7 @@ func (s *Service) Save(ctx context.Context, in SaveInput) (bookmarks.Bookmark, b
 	existing, err := s.st.GetBookmarkByURL(ctx, u)
 	switch {
 	case err == nil:
-		apply(&existing, in)
-		existing.DateModified = s.now()
-		if in.DateModified != nil {
-			existing.DateModified = in.DateModified.UTC()
-		}
-		if err := s.st.UpdateBookmark(ctx, existing); err != nil {
-			return bookmarks.Bookmark{}, false, err
-		}
-		if mode == CaptureServer && existing.ArchiveCount == 0 {
-			s.enqueue(ctx, jobs.KindCapture, existing.ID)
-		}
-		b, err := s.st.GetBookmark(ctx, existing.ID)
-		return b, false, err
+		return s.saveExisting(ctx, existing, in, mode)
 	case !errors.Is(err, store.ErrNotFound):
 		return bookmarks.Bookmark{}, false, err
 	}
@@ -128,6 +119,14 @@ func (s *Service) Save(ctx context.Context, in SaveInput) (bookmarks.Bookmark, b
 		b.DateModified = in.DateModified.UTC()
 	}
 	if err := s.st.CreateBookmark(ctx, &b); err != nil {
+		if errors.Is(err, store.ErrConflict) {
+			// A concurrent save of the same URL won the race: merge into it.
+			existing, gerr := s.st.GetBookmarkByURL(ctx, u)
+			if gerr != nil {
+				return bookmarks.Bookmark{}, false, gerr
+			}
+			return s.saveExisting(ctx, existing, in, mode)
+		}
 		return bookmarks.Bookmark{}, false, err
 	}
 	s.enqueue(ctx, jobs.KindMetadata, b.ID)
@@ -139,6 +138,23 @@ func (s *Service) Save(ctx context.Context, in SaveInput) (bookmarks.Bookmark, b
 	}
 	b, err = s.st.GetBookmark(ctx, b.ID)
 	return b, true, err
+}
+
+// saveExisting merges in into an already stored bookmark.
+func (s *Service) saveExisting(ctx context.Context, existing bookmarks.Bookmark, in SaveInput, mode CaptureMode) (bookmarks.Bookmark, bool, error) {
+	apply(&existing, in)
+	existing.DateModified = s.now()
+	if in.DateModified != nil {
+		existing.DateModified = in.DateModified.UTC()
+	}
+	if err := s.st.UpdateBookmark(ctx, existing); err != nil {
+		return bookmarks.Bookmark{}, false, err
+	}
+	if mode == CaptureServer && existing.ArchiveCount == 0 {
+		s.enqueue(ctx, jobs.KindCapture, existing.ID)
+	}
+	b, err := s.st.GetBookmark(ctx, existing.ID)
+	return b, false, err
 }
 
 // Update changes the provided fields of bookmark id (PATCH semantics). A new
@@ -200,6 +216,8 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 			s.log.Printf("service: remove archive file of bookmark %d: %v", id, err)
 		}
 	}
+	// Drop the now-empty per-bookmark directory (fails harmlessly if not empty).
+	_ = os.Remove(filepath.Join(s.files.Dir, strconv.FormatInt(id, 10)))
 	s.removePreviewIfUnused(ctx, b.PreviewFile)
 	return nil
 }

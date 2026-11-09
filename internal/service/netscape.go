@@ -199,6 +199,8 @@ func (s *Service) ImportNetscape(ctx context.Context, r io.Reader) (ImportResult
 			case err == nil:
 				merged := append(append([]string(nil), existing.Tags...), e.tags...)
 				in.Tags = &merged
+				// An import never rewrites when an existing bookmark was added or modified.
+				in.DateAdded, in.DateModified = nil, nil
 				if e.description == "" {
 					in.Description = nil
 				}
@@ -233,26 +235,33 @@ const exportPageSize = 500
 
 // ExportNetscape writes every bookmark (archived ones too) as a Netscape
 // bookmark file in linkding's format, oldest first.
+//
+// Every bookmark is loaded before the first byte is written, so a search
+// failure surfaces as an error instead of a truncated file.
 func (s *Service) ExportNetscape(ctx context.Context, w io.Writer) error {
-	bw := bufio.NewWriter(w)
-	bw.WriteString("<!DOCTYPE NETSCAPE-Bookmark-file-1>\n")
-	bw.WriteString("<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">\n")
-	bw.WriteString("<TITLE>Bookmarks</TITLE>\n")
-	bw.WriteString("<H1>Bookmarks</H1>\n")
-	bw.WriteString("<DL><p>\n")
+	var all []bookmarks.Bookmark
 	q := SearchInput{Scope: "all", Sort: "added_asc", Limit: exportPageSize}
 	for {
 		res, err := s.Search(ctx, q)
 		if err != nil {
 			return err
 		}
-		for _, b := range res.Hits {
-			writeNetscapeBookmark(bw, b.Bookmark)
+		for _, h := range res.Hits {
+			all = append(all, h.Bookmark)
 		}
 		q.Offset += len(res.Hits)
 		if len(res.Hits) == 0 || q.Offset >= res.Total {
 			break
 		}
+	}
+	bw := bufio.NewWriter(w)
+	bw.WriteString("<!DOCTYPE NETSCAPE-Bookmark-file-1>\n")
+	bw.WriteString("<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">\n")
+	bw.WriteString("<TITLE>Bookmarks</TITLE>\n")
+	bw.WriteString("<H1>Bookmarks</H1>\n")
+	bw.WriteString("<DL><p>\n")
+	for _, b := range all {
+		writeNetscapeBookmark(bw, b)
 	}
 	bw.WriteString("</DL><p>\n")
 	if err := bw.Flush(); err != nil {

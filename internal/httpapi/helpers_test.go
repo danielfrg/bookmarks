@@ -36,6 +36,7 @@ type testEnv struct {
 	h   http.Handler
 	dir string
 	svc *service.Service
+	st  *store.SQLite
 }
 
 // envOpts tweaks the test environment.
@@ -63,7 +64,7 @@ func newTestEnv(t *testing.T, opts ...func(*envOpts)) *testEnv {
 	if o.noToken {
 		deps.APIToken = ""
 	}
-	return &testEnv{h: NewHandler(fstest.MapFS{}, deps), dir: dir, svc: svc}
+	return &testEnv{h: NewHandler(fstest.MapFS{}, deps), dir: dir, svc: svc, st: st}
 }
 
 // do sends a request with the browser-style write headers (X-Bookmarks).
