@@ -16,7 +16,7 @@ A self-hosted, single-user bookmark manager inspired by
 
 | Path | What |
 | --- | --- |
-| `cmd/bookmarks` | The server: web UI, REST API (`/_/api`), MCP (`/_/mcp`) |
+| `cmd/bookmarks` | The server: web UI, REST API (`/api`), MCP (`/mcp`) |
 | `cmd/import-linkding` | One-off migration from a linkding instance, archives included |
 | `frontend/` | Svelte 5 web UI |
 | `extension/` | Chrome extension |
@@ -28,8 +28,8 @@ just api
 ```
 
 The server listens on `127.0.0.1:8080` and keeps its data (SQLite database,
-favicons, previews, archives) in `./data`. API docs are at `/_/api/docs` and the
-MCP endpoint is `/_/mcp`.
+favicons, previews, archives) in `./data`. API docs are at `/api/docs` and the
+MCP endpoint is `/mcp`.
 
 ## Using the web UI
 
@@ -76,9 +76,9 @@ All settings are environment variables.
 
 ## Endpoints
 
-- `/_/api/docs`: interactive API documentation (OpenAPI at `/_/api/openapi`)
-- `/_/mcp`: MCP server (search and read bookmarks)
-- `/_/healthz`, `/_/readyz`: health checks
+- `/api/docs`: interactive API documentation (OpenAPI at `/api/openapi`)
+- `/mcp`: MCP server (search and read bookmarks)
+- `/healthz`, `/readyz`: health checks
 
 ## Development
 
@@ -88,7 +88,7 @@ See the `justfile` for the available recipes.
 ```sh
 just install   # frontend dependencies
 just api       # Go API on 127.0.0.1:8080
-just frontend  # Vite dev server on 127.0.0.1:5173, proxies /_/api etc. to the API
+just frontend  # Vite dev server on 127.0.0.1:5173, proxies /api etc. to the API
 ```
 
 Set `BOOKMARKS_API_TARGET` to point the dev server at a different API address.

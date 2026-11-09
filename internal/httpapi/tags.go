@@ -31,7 +31,7 @@ type renameTagInput struct {
 }
 
 func registerTags(api huma.API, svc *service.Service) {
-	huma.Register(api, huma.Operation{OperationID: "list-tags", Method: http.MethodGet, Path: "/_/api/tags", Summary: "List tags with their bookmark counts"},
+	huma.Register(api, huma.Operation{OperationID: "list-tags", Method: http.MethodGet, Path: "/api/tags", Summary: "List tags with their bookmark counts"},
 		func(ctx context.Context, _ *struct{}) (*tagListOutput, error) {
 			tags, err := svc.Tags(ctx)
 			if err != nil {
@@ -44,7 +44,7 @@ func registerTags(api huma.API, svc *service.Service) {
 			return out, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "rename-tag", Method: http.MethodPatch, Path: "/_/api/tags/{id}", Summary: "Rename a tag",
+	huma.Register(api, huma.Operation{OperationID: "rename-tag", Method: http.MethodPatch, Path: "/api/tags/{id}", Summary: "Rename a tag",
 		Description: "Renaming to the name of an existing tag merges the two. Returns the resulting tag."},
 		func(ctx context.Context, in *renameTagInput) (*tagOutput, error) {
 			if err := svc.RenameTag(ctx, in.ID, in.Body.Name); err != nil {
@@ -63,7 +63,7 @@ func registerTags(api huma.API, svc *service.Service) {
 			return nil, apiError(errTagVanished)
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "delete-tag", Method: http.MethodDelete, Path: "/_/api/tags/{id}", Summary: "Delete a tag", DefaultStatus: http.StatusNoContent},
+	huma.Register(api, huma.Operation{OperationID: "delete-tag", Method: http.MethodDelete, Path: "/api/tags/{id}", Summary: "Delete a tag", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *idInput) (*emptyOutput, error) {
 			if err := svc.DeleteTag(ctx, in.ID); err != nil {
 				return nil, apiError(err)

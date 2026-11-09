@@ -30,7 +30,7 @@ type bulkOutput struct {
 }
 
 func registerBulk(api huma.API, svc *service.Service) {
-	huma.Register(api, huma.Operation{OperationID: "bulk-bookmarks", Method: http.MethodPost, Path: "/_/api/bookmarks/bulk", Summary: "Apply an action to many bookmarks"},
+	huma.Register(api, huma.Operation{OperationID: "bulk-bookmarks", Method: http.MethodPost, Path: "/api/bookmarks/bulk", Summary: "Apply an action to many bookmarks"},
 		func(ctx context.Context, in *bulkInput) (*bulkOutput, error) {
 			bi := service.BulkInput{IDs: in.Body.IDs, Action: in.Body.Action, Tags: in.Body.Tags}
 			if q := in.Body.Query; q != nil {

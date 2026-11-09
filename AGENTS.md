@@ -35,7 +35,7 @@ purpose; never commit them).
 - Keep SQLite rollback journaling (no WAL); the database lives on NFS.
 - Keep SQL behind the store interface and full-text search behind its own
   interface; Postgres may replace SQLite later.
-- Internal endpoints live under `/_/`.
+- Routes: the REST API lives under `/api`, MCP at `/mcp`, files under `/archives`, `/favicons` and `/previews`, built frontend assets under `/assets`, and health checks at `/healthz` and `/readyz`. The index is `/` only; no SPA catch-all, unknown paths are 404.
 - The web UI has no auth (it runs behind Cloudflare Access / internal network).
   External API clients use the bearer token. MCP is protected by the allowed-hosts
   check only.

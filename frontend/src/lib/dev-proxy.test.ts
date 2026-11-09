@@ -6,19 +6,14 @@ import type { UserConfig } from "vite";
 const loadConfig = async (tag: string): Promise<UserConfig> =>
   (await import(`../../vite.config.ts?${tag}`)).default;
 
-test("vite config serves under /_/assets/ and proxies the API paths unchanged", async () => {
+test("vite config serves under /assets/ and proxies the API paths unchanged", async () => {
   const previous = process.env.BOOKMARKS_API_TARGET;
   try {
     delete process.env.BOOKMARKS_API_TARGET;
     const config = await loadConfig("default");
-    assert.equal(config.base, "/_/assets/");
+    assert.equal(config.base, "/assets/");
     const proxy = config.server?.proxy ?? {};
-    assert.deepEqual(Object.keys(proxy).sort(), [
-      "/_/api",
-      "/_/archives",
-      "/_/favicons",
-      "/_/previews",
-    ]);
+    assert.deepEqual(Object.keys(proxy).sort(), ["/api", "/archives", "/favicons", "/previews"]);
     for (const rule of Object.values(proxy)) {
       assert.deepEqual(rule, { target: "http://127.0.0.1:8080", changeOrigin: false });
     }

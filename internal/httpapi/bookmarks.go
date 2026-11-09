@@ -50,10 +50,10 @@ func toBookmark(b bookmarks.Bookmark) bookmarkJSON {
 		j.ReaderStatus = string(bookmarks.ReaderNone)
 	}
 	if b.FaviconFile != "" {
-		j.FaviconURL = "/_/favicons/" + b.FaviconFile
+		j.FaviconURL = "/favicons/" + b.FaviconFile
 	}
 	if b.PreviewFile != "" {
-		j.PreviewImageURL = "/_/previews/" + b.PreviewFile
+		j.PreviewImageURL = "/previews/" + b.PreviewFile
 	}
 	return j
 }
@@ -159,7 +159,7 @@ type readerOutput struct {
 type emptyOutput struct{}
 
 func registerBookmarks(api huma.API, svc *service.Service) {
-	huma.Register(api, huma.Operation{OperationID: "list-bookmarks", Method: http.MethodGet, Path: "/_/api/bookmarks", Summary: "Search bookmarks"},
+	huma.Register(api, huma.Operation{OperationID: "list-bookmarks", Method: http.MethodGet, Path: "/api/bookmarks", Summary: "Search bookmarks"},
 		func(ctx context.Context, in *listInput) (*listOutput, error) {
 			res, err := svc.Search(ctx, service.SearchInput{
 				Q: in.Q, Scope: in.Scope, Unread: in.Unread, Sort: in.Sort, SavedSearchID: in.SavedSearch,
@@ -177,7 +177,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 			return out, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "save-bookmark", Method: http.MethodPost, Path: "/_/api/bookmarks", Summary: "Create a bookmark, or update the one with the same URL",
+	huma.Register(api, huma.Operation{OperationID: "save-bookmark", Method: http.MethodPost, Path: "/api/bookmarks", Summary: "Create a bookmark, or update the one with the same URL",
 		Description: "Returns 201 when created and 200 when merged into an existing bookmark."},
 		func(ctx context.Context, in *createInput) (*bookmarkOutput, error) {
 			b, created, err := svc.Save(ctx, service.SaveInput{
@@ -196,7 +196,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 			return &bookmarkOutput{Status: status, Body: toBookmark(b)}, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "check-bookmark", Method: http.MethodGet, Path: "/_/api/bookmarks/check", Summary: "Look up a URL before saving it"},
+	huma.Register(api, huma.Operation{OperationID: "check-bookmark", Method: http.MethodGet, Path: "/api/bookmarks/check", Summary: "Look up a URL before saving it"},
 		func(ctx context.Context, in *checkInput) (*checkOutput, error) {
 			res, err := svc.Check(ctx, in.URL)
 			if err != nil {
@@ -218,7 +218,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 			return out, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "get-bookmark", Method: http.MethodGet, Path: "/_/api/bookmarks/{id}", Summary: "Get a bookmark"},
+	huma.Register(api, huma.Operation{OperationID: "get-bookmark", Method: http.MethodGet, Path: "/api/bookmarks/{id}", Summary: "Get a bookmark"},
 		func(ctx context.Context, in *idInput) (*bookmarkOutput, error) {
 			b, err := svc.Get(ctx, in.ID)
 			if err != nil {
@@ -227,7 +227,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 			return &bookmarkOutput{Status: http.StatusOK, Body: toBookmark(b)}, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "update-bookmark", Method: http.MethodPatch, Path: "/_/api/bookmarks/{id}", Summary: "Update the provided fields of a bookmark"},
+	huma.Register(api, huma.Operation{OperationID: "update-bookmark", Method: http.MethodPatch, Path: "/api/bookmarks/{id}", Summary: "Update the provided fields of a bookmark"},
 		func(ctx context.Context, in *patchInput) (*bookmarkOutput, error) {
 			b, err := svc.Update(ctx, in.ID, service.SaveInput{
 				URL: in.Body.URL, Title: in.Body.Title, Description: in.Body.Description, Notes: in.Body.Notes,
@@ -240,7 +240,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 			return &bookmarkOutput{Status: http.StatusOK, Body: toBookmark(b)}, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "delete-bookmark", Method: http.MethodDelete, Path: "/_/api/bookmarks/{id}", Summary: "Delete a bookmark", DefaultStatus: http.StatusNoContent},
+	huma.Register(api, huma.Operation{OperationID: "delete-bookmark", Method: http.MethodDelete, Path: "/api/bookmarks/{id}", Summary: "Delete a bookmark", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *idInput) (*emptyOutput, error) {
 			if err := svc.Delete(ctx, in.ID); err != nil {
 				return nil, apiError(err)
@@ -248,7 +248,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 			return &emptyOutput{}, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "capture-bookmark", Method: http.MethodPost, Path: "/_/api/bookmarks/{id}/capture", Summary: "Request a server capture", DefaultStatus: http.StatusAccepted},
+	huma.Register(api, huma.Operation{OperationID: "capture-bookmark", Method: http.MethodPost, Path: "/api/bookmarks/{id}/capture", Summary: "Request a server capture", DefaultStatus: http.StatusAccepted},
 		func(ctx context.Context, in *idInput) (*emptyOutput, error) {
 			if err := svc.RequestCapture(ctx, in.ID); err != nil {
 				return nil, apiError(err)
@@ -256,7 +256,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 			return &emptyOutput{}, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "extract-reader", Method: http.MethodPost, Path: "/_/api/bookmarks/{id}/reader/extract", Summary: "Request reader text extraction", DefaultStatus: http.StatusAccepted},
+	huma.Register(api, huma.Operation{OperationID: "extract-reader", Method: http.MethodPost, Path: "/api/bookmarks/{id}/reader/extract", Summary: "Request reader text extraction", DefaultStatus: http.StatusAccepted},
 		func(ctx context.Context, in *idInput) (*emptyOutput, error) {
 			if err := svc.RequestExtract(ctx, in.ID); err != nil {
 				return nil, apiError(err)
@@ -264,7 +264,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 			return &emptyOutput{}, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "get-reader", Method: http.MethodGet, Path: "/_/api/bookmarks/{id}/reader", Summary: "Get a page of reader text (markdown)"},
+	huma.Register(api, huma.Operation{OperationID: "get-reader", Method: http.MethodGet, Path: "/api/bookmarks/{id}/reader", Summary: "Get a page of reader text (markdown)"},
 		func(ctx context.Context, in *readerInput) (*readerOutput, error) {
 			p, err := svc.Reader(ctx, in.ID, in.Offset, in.MaxChars)
 			if err != nil {

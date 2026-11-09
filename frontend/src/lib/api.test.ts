@@ -58,7 +58,7 @@ test("requestJSON surfaces problem details", async () => {
       () => res,
       async () => {
         await assert.rejects(
-          () => requestJSON("/_/api/x"),
+          () => requestJSON("/api/x"),
           (err: unknown) => {
             assert.ok(err instanceof ApiError);
             assert.equal(err.message, message);
@@ -75,9 +75,9 @@ test("writes send X-Bookmarks and JSON content type, GETs do not", async () => {
   await withFetch(
     (url) => (url.endsWith("/get") ? json({}) : new Response(null, { status: 204 })),
     async (calls) => {
-      await requestJSON("/_/api/get");
-      await requestJSON("/_/api/x", { method: "POST", body: "{}" });
-      await requestJSON("/_/api/x", { method: "DELETE" });
+      await requestJSON("/api/get");
+      await requestJSON("/api/x", { method: "POST", body: "{}" });
+      await requestJSON("/api/x", { method: "DELETE" });
       const [get, post, del] = calls.map((c) => new Headers(c.init.headers));
       assert.equal(get.get("X-Bookmarks"), null);
       assert.equal(get.get("Content-Type"), null);
@@ -97,7 +97,7 @@ test("204 and empty 202 bodies return undefined", async () => {
     () => new Response("", { status: 202 }),
     async (calls) => {
       assert.equal(await api.capture(3), undefined);
-      assert.equal(calls[0].url, "/_/api/bookmarks/3/capture");
+      assert.equal(calls[0].url, "/api/bookmarks/3/capture");
       assert.equal(calls[0].init.method, "POST");
     },
   );
@@ -108,7 +108,7 @@ test("list builds query string", async () => {
     () => json({ count: 0, results: [] }),
     async (calls) => {
       await api.list({ q: "", scope: "active", sort: "", offset: 0 });
-      assert.equal(calls[0].url, "/_/api/bookmarks?scope=active");
+      assert.equal(calls[0].url, "/api/bookmarks?scope=active");
       await api.list({
         q: "a b #go",
         scope: "active",
@@ -119,7 +119,7 @@ test("list builds query string", async () => {
         offset: 60,
       });
       const u = new URL(calls[1].url, "http://x");
-      assert.equal(u.pathname, "/_/api/bookmarks");
+      assert.equal(u.pathname, "/api/bookmarks");
       assert.equal(u.searchParams.get("q"), "a b #go");
       assert.equal(u.searchParams.get("unread"), "yes");
       assert.equal(u.searchParams.get("saved_search"), "4");
@@ -140,7 +140,7 @@ test("save reports created from 201 vs 200", async () => {
         const res = await api.save({ url: "https://a.test" }, "none");
         assert.equal(res.created, created);
         assert.equal(res.bookmark.id, 1);
-        assert.equal(calls[0].url, "/_/api/bookmarks?capture=none");
+        assert.equal(calls[0].url, "/api/bookmarks?capture=none");
       },
     );
   }
@@ -148,7 +148,7 @@ test("save reports created from 201 vs 200", async () => {
     () => json({ id: 1 }, 201),
     async (calls) => {
       await api.save({ url: "https://a.test" });
-      assert.equal(calls[0].url, "/_/api/bookmarks");
+      assert.equal(calls[0].url, "/api/bookmarks");
     },
   );
 });
@@ -158,7 +158,7 @@ test("uploadArchive sends source before file and no content type", async () => {
     () => json({ id: 9 }, 201),
     async (calls) => {
       await api.uploadArchive(5, new File(["hi"], "page.html", { type: "text/html" }));
-      assert.equal(calls[0].url, "/_/api/bookmarks/5/archives");
+      assert.equal(calls[0].url, "/api/bookmarks/5/archives");
       const headers = new Headers(calls[0].init.headers);
       assert.equal(headers.get("X-Bookmarks"), "1");
       assert.equal(headers.get("Content-Type"), null);
@@ -206,26 +206,26 @@ test("routes and verbs match the server", async () => {
       await api.deleteSavedSearch(3);
       const got = calls.map((c) => `${c.init.method ?? "GET"} ${c.url}`);
       assert.deepEqual(got, [
-        "GET /_/api/bookmarks/2",
-        "GET /_/api/bookmarks/check?url=https%3A%2F%2Fa.test%2F%3Fx%3D1%26y%3D2",
-        "PATCH /_/api/bookmarks/2",
-        "GET /_/api/bookmarks/2/archives",
-        "GET /_/api/bookmarks/2/reader?offset=100&max_chars=500",
-        "GET /_/api/bookmarks/2/reader",
-        "PATCH /_/api/tags/7",
-        "POST /_/api/saved-searches",
-        "PUT /_/api/saved-searches/3",
-        "POST /_/api/saved-searches/reorder",
-        "PUT /_/api/settings",
-        "POST /_/api/bookmarks/bulk",
-        "POST /_/api/bookmarks/2/reader/extract",
-        "DELETE /_/api/archives/8",
-        "DELETE /_/api/tags/7",
-        "DELETE /_/api/saved-searches/3",
+        "GET /api/bookmarks/2",
+        "GET /api/bookmarks/check?url=https%3A%2F%2Fa.test%2F%3Fx%3D1%26y%3D2",
+        "PATCH /api/bookmarks/2",
+        "GET /api/bookmarks/2/archives",
+        "GET /api/bookmarks/2/reader?offset=100&max_chars=500",
+        "GET /api/bookmarks/2/reader",
+        "PATCH /api/tags/7",
+        "POST /api/saved-searches",
+        "PUT /api/saved-searches/3",
+        "POST /api/saved-searches/reorder",
+        "PUT /api/settings",
+        "POST /api/bookmarks/bulk",
+        "POST /api/bookmarks/2/reader/extract",
+        "DELETE /api/archives/8",
+        "DELETE /api/tags/7",
+        "DELETE /api/saved-searches/3",
       ]);
       assert.equal(calls[7].init.body, JSON.stringify({ name: "b" }));
       assert.equal(calls[9].init.body, JSON.stringify({ ids: [3, 1] }));
     },
   );
-  assert.equal(api.exportURL, "/_/api/export/netscape");
+  assert.equal(api.exportURL, "/api/export/netscape");
 });

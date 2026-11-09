@@ -12,7 +12,7 @@ import (
 // maxImportBytes caps the Netscape file of an import.
 const maxImportBytes = 16 << 20
 
-// importNetscape handles POST /_/api/import/netscape (multipart, part "file").
+// importNetscape handles POST /api/import/netscape (multipart, part "file").
 // Like the archive upload it streams the file part (no ParseMultipartForm), so
 // the HTML is tokenized while it is received.
 func importNetscape(svc *service.Service) http.HandlerFunc {
@@ -52,7 +52,7 @@ func importNetscape(svc *service.Service) http.HandlerFunc {
 	}
 }
 
-// exportNetscape handles GET /_/api/export/netscape.
+// exportNetscape handles GET /api/export/netscape.
 func exportNetscape(svc *service.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tw := &trackingWriter{ResponseWriter: w}

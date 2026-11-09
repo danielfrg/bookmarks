@@ -18,14 +18,14 @@ func get(h http.Handler, path string) *httptest.ResponseRecorder {
 
 func TestHealth(t *testing.T) {
 	ok := NewHandler(fstest.MapFS{}, Deps{Ping: func(context.Context) error { return nil }})
-	if w := get(ok, "/_/healthz"); w.Code != 200 || w.Body.String() != "ok\n" {
+	if w := get(ok, "/healthz"); w.Code != 200 || w.Body.String() != "ok\n" {
 		t.Fatal(w.Code, w.Body.String())
 	}
-	if w := get(ok, "/_/readyz"); w.Code != 200 {
+	if w := get(ok, "/readyz"); w.Code != 200 {
 		t.Fatal(w.Code)
 	}
 	bad := NewHandler(fstest.MapFS{}, Deps{Ping: func(context.Context) error { return errors.New("down") }})
-	if w := get(bad, "/_/readyz"); w.Code != 503 {
+	if w := get(bad, "/readyz"); w.Code != 503 {
 		t.Fatal(w.Code)
 	}
 }
@@ -43,14 +43,14 @@ func TestIndexWithoutFrontend(t *testing.T) {
 
 func TestOpenAPIServed(t *testing.T) {
 	h := NewHandler(fstest.MapFS{}, Deps{Ping: func(context.Context) error { return nil }})
-	if w := get(h, "/_/api/openapi.json"); w.Code != 200 {
+	if w := get(h, "/api/openapi.json"); w.Code != 200 {
 		t.Fatal(w.Code)
 	}
 }
 
 func TestMCPMountedOutsideAPIGuard(t *testing.T) {
 	e := newTestEnv(t)
-	r := httptest.NewRequest("POST", "/_/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"ping"}`))
+	r := httptest.NewRequest("POST", "/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"ping"}`))
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("Accept", "application/json, text/event-stream")
 	r.Host = "localhost"

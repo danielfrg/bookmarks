@@ -14,18 +14,18 @@ const jsonBodyLimit = 1 << 20
 
 // uploadPath matches the multipart routes: the archive upload and the
 // Netscape import (whose file is capped at maxImportBytes by its handler).
-var uploadPath = regexp.MustCompile(`^(/_/api/bookmarks/[0-9]+/archives|/_/api/import/netscape)$`)
+var uploadPath = regexp.MustCompile(`^(/api/bookmarks/[0-9]+/archives|/api/import/netscape)$`)
 
-const importPath = "/_/api/import/netscape"
+const importPath = "/api/import/netscape"
 
-// protectAPI guards /_/api/*. A request with an Authorization header is an
+// protectAPI guards /api/*. A request with an Authorization header is an
 // external client and must carry the API token; it needs no origin checks.
 // Anything else is the web UI: reads are open, writes need the X-Bookmarks
 // header, a same-host Origin (when sent) and a JSON body (multipart too on the
 // archive upload route). Bodies are size limited.
 func protectAPI(next http.Handler, apiToken string, maxUploadBytes int64) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/_/api" && !strings.HasPrefix(r.URL.Path, "/_/api/") {
+		if r.URL.Path != "/api" && !strings.HasPrefix(r.URL.Path, "/api/") {
 			next.ServeHTTP(w, r)
 			return
 		}

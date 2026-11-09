@@ -76,7 +76,7 @@ type reorderSavedSearchesInput struct {
 }
 
 func registerSavedSearches(api huma.API, svc *service.Service) {
-	huma.Register(api, huma.Operation{OperationID: "list-saved-searches", Method: http.MethodGet, Path: "/_/api/saved-searches", Summary: "List saved searches in display order"},
+	huma.Register(api, huma.Operation{OperationID: "list-saved-searches", Method: http.MethodGet, Path: "/api/saved-searches", Summary: "List saved searches in display order"},
 		func(ctx context.Context, _ *struct{}) (*savedSearchListOutput, error) {
 			list, err := svc.SavedSearches(ctx)
 			if err != nil {
@@ -89,7 +89,7 @@ func registerSavedSearches(api huma.API, svc *service.Service) {
 			return out, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "create-saved-search", Method: http.MethodPost, Path: "/_/api/saved-searches", Summary: "Create a saved search", DefaultStatus: http.StatusCreated},
+	huma.Register(api, huma.Operation{OperationID: "create-saved-search", Method: http.MethodPost, Path: "/api/saved-searches", Summary: "Create a saved search", DefaultStatus: http.StatusCreated},
 		func(ctx context.Context, in *createSavedSearchInput) (*savedSearchOutput, error) {
 			b, err := svc.SaveSavedSearch(ctx, in.Body.savedSearch(0))
 			if err != nil {
@@ -98,7 +98,7 @@ func registerSavedSearches(api huma.API, svc *service.Service) {
 			return &savedSearchOutput{Body: toSavedSearch(b)}, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "reorder-saved-searches", Method: http.MethodPost, Path: "/_/api/saved-searches/reorder", Summary: "Set the saved search order", DefaultStatus: http.StatusNoContent},
+	huma.Register(api, huma.Operation{OperationID: "reorder-saved-searches", Method: http.MethodPost, Path: "/api/saved-searches/reorder", Summary: "Set the saved search order", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *reorderSavedSearchesInput) (*emptyOutput, error) {
 			if err := svc.ReorderSavedSearches(ctx, in.Body.IDs); err != nil {
 				return nil, apiError(err)
@@ -106,7 +106,7 @@ func registerSavedSearches(api huma.API, svc *service.Service) {
 			return &emptyOutput{}, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "get-saved-search", Method: http.MethodGet, Path: "/_/api/saved-searches/{id}", Summary: "Get a saved search"},
+	huma.Register(api, huma.Operation{OperationID: "get-saved-search", Method: http.MethodGet, Path: "/api/saved-searches/{id}", Summary: "Get a saved search"},
 		func(ctx context.Context, in *idInput) (*savedSearchOutput, error) {
 			b, err := svc.SavedSearch(ctx, in.ID)
 			if err != nil {
@@ -115,7 +115,7 @@ func registerSavedSearches(api huma.API, svc *service.Service) {
 			return &savedSearchOutput{Body: toSavedSearch(b)}, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "update-saved-search", Method: http.MethodPut, Path: "/_/api/saved-searches/{id}", Summary: "Replace the editable fields of a saved search"},
+	huma.Register(api, huma.Operation{OperationID: "update-saved-search", Method: http.MethodPut, Path: "/api/saved-searches/{id}", Summary: "Replace the editable fields of a saved search"},
 		func(ctx context.Context, in *updateSavedSearchInput) (*savedSearchOutput, error) {
 			// Check existence first: SaveSavedSearch with an unknown ID must be a 404.
 			if _, err := svc.SavedSearch(ctx, in.ID); err != nil {
@@ -128,7 +128,7 @@ func registerSavedSearches(api huma.API, svc *service.Service) {
 			return &savedSearchOutput{Body: toSavedSearch(b)}, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "delete-saved-search", Method: http.MethodDelete, Path: "/_/api/saved-searches/{id}", Summary: "Delete a saved search", DefaultStatus: http.StatusNoContent},
+	huma.Register(api, huma.Operation{OperationID: "delete-saved-search", Method: http.MethodDelete, Path: "/api/saved-searches/{id}", Summary: "Delete a saved search", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *idInput) (*emptyOutput, error) {
 			if err := svc.DeleteSavedSearch(ctx, in.ID); err != nil {
 				return nil, apiError(err)

@@ -164,7 +164,7 @@
     }
   }
 
-  const mcpURL = `${window.location.origin}/_/mcp`;
+  const mcpURL = `${window.location.origin}/mcp`;
 </script>
 
 <main class="main page settings-page">
@@ -303,10 +303,10 @@
                 The API token is set with <code class="mono">BOOKMARKS_API_TOKEN</code> on the server.
               </p>
               <p class="small">
-                API docs: <a href="/_/api/docs" target="_blank" rel="noreferrer">/_/api/docs</a>
+                API docs: <a href="/api/docs" target="_blank" rel="noreferrer">/api/docs</a>
               </p>
               <p class="small">
-                MCP: <a class="mono" href="/_/mcp">{mcpURL}</a>
+                MCP: <a class="mono" href="/mcp">{mcpURL}</a>
                 <CopyButton text={mcpURL} ariaLabel="Copy MCP URL" title="Copy MCP URL" />
               </p>
             </div>

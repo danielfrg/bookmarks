@@ -25,11 +25,11 @@ func Handler(assets fs.FS) http.Handler {
 			Index(w, r, assets, 200)
 			return
 		}
-		if !strings.HasPrefix(r.URL.Path, "/_/assets/") {
+		if !strings.HasPrefix(r.URL.Path, "/assets/") {
 			http.NotFound(w, r)
 			return
 		}
-		name := strings.TrimPrefix(r.URL.Path, "/_/assets/")
+		name := strings.TrimPrefix(r.URL.Path, "/assets/")
 		for _, part := range strings.Split(name, "/") {
 			if strings.HasPrefix(part, ".") {
 				http.NotFound(w, r)

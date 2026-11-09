@@ -92,7 +92,7 @@ func TestEndToEnd(t *testing.T) {
 		return resp.StatusCode, data
 	}
 
-	status, data := do("POST", "/_/api/bookmarks?capture=server", "application/json",
+	status, data := do("POST", "/api/bookmarks?capture=server", "application/json",
 		strings.NewReader(fmt.Sprintf(`{"url":%q}`, site.URL+"/article")))
 	if status != 201 && status != 200 {
 		t.Fatalf("create: %d %s", status, data)
@@ -111,7 +111,7 @@ func TestEndToEnd(t *testing.T) {
 	}
 	get := func() bookmark {
 		t.Helper()
-		_, data := do("GET", fmt.Sprintf("/_/api/bookmarks/%d", created.ID), "", nil)
+		_, data := do("GET", fmt.Sprintf("/api/bookmarks/%d", created.ID), "", nil)
 		var b bookmark
 		if err := json.Unmarshal(data, &b); err != nil {
 			t.Fatalf("%s", data)
@@ -130,7 +130,7 @@ func TestEndToEnd(t *testing.T) {
 		t.Fatalf("after capture: %+v", b)
 	}
 
-	status, data = do("GET", "/_/api/bookmarks?q="+uniqueWord, "", nil)
+	status, data = do("GET", "/api/bookmarks?q="+uniqueWord, "", nil)
 	// uniqueWord appears only in the article body (not title, URL or notes), so
 	// a hit proves the reader text was indexed.
 	var found struct {
@@ -143,7 +143,7 @@ func TestEndToEnd(t *testing.T) {
 	}
 
 	c := sdk.NewClient(&sdk.Implementation{Name: "test", Version: "0"}, nil)
-	session, err := c.Connect(context.Background(), &sdk.StreamableClientTransport{Endpoint: base + "/_/mcp", HTTPClient: client}, nil)
+	session, err := c.Connect(context.Background(), &sdk.StreamableClientTransport{Endpoint: base + "/mcp", HTTPClient: client}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +171,7 @@ func TestEndToEnd(t *testing.T) {
 	}
 	_, _ = io.WriteString(fw, articleHTML())
 	mw.Close()
-	status, data = do("POST", fmt.Sprintf("/_/api/bookmarks/%d/archives", created.ID), mw.FormDataContentType(), &buf)
+	status, data = do("POST", fmt.Sprintf("/api/bookmarks/%d/archives", created.ID), mw.FormDataContentType(), &buf)
 	if status != 201 {
 		t.Fatalf("upload: %d %s", status, data)
 	}

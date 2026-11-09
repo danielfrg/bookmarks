@@ -46,7 +46,7 @@ func TestUploadArchiveAndView(t *testing.T) {
 		{"created_at", "", "2026-01-02T03:04:05Z"},
 		{"file", "page.html", html},
 	})
-	path := fmt.Sprintf("/_/api/bookmarks/%d/archives", b.ID)
+	path := fmt.Sprintf("/api/bookmarks/%d/archives", b.ID)
 	w := e.upload(path, ctype, strings.NewReader(body.String()), false)
 	if w.Code != 201 {
 		t.Fatal(w.Code, w.Body.String())
@@ -54,7 +54,7 @@ func TestUploadArchiveAndView(t *testing.T) {
 	a := decode[archiveResp](t, w)
 	if a.Source != "extension" || a.ContentType != "text/html" || a.DisplayName != "page.html" || a.FileSize != int64(len(html)) ||
 		a.CreatedAt != "2026-01-02T03:04:05Z" ||
-		a.ViewURL != fmt.Sprintf("/_/archives/%d", a.ID) || a.DownloadURL != fmt.Sprintf("/_/archives/%d/download", a.ID) {
+		a.ViewURL != fmt.Sprintf("/archives/%d", a.ID) || a.DownloadURL != fmt.Sprintf("/archives/%d/download", a.ID) {
 		t.Fatalf("%+v", a)
 	}
 
@@ -82,17 +82,17 @@ func TestUploadArchiveAndView(t *testing.T) {
 	if w.Code != 200 || len(list) != 1 || list[0].ID != a.ID {
 		t.Fatal(w.Code, w.Body.String())
 	}
-	if w := e.do("GET", fmt.Sprintf("/_/api/bookmarks/%d", b.ID), nil); !strings.Contains(w.Body.String(), `"archive_count":1`) {
+	if w := e.do("GET", fmt.Sprintf("/api/bookmarks/%d", b.ID), nil); !strings.Contains(w.Body.String(), `"archive_count":1`) {
 		t.Fatal(w.Body.String())
 	}
 
-	if w := e.do("DELETE", fmt.Sprintf("/_/api/archives/%d", a.ID), nil); w.Code != 204 {
+	if w := e.do("DELETE", fmt.Sprintf("/api/archives/%d", a.ID), nil); w.Code != 204 {
 		t.Fatal(w.Code, w.Body.String())
 	}
 	if w := e.do("GET", a.ViewURL, nil); w.Code != 404 {
 		t.Fatal(w.Code)
 	}
-	if w := e.do("DELETE", fmt.Sprintf("/_/api/archives/%d", a.ID), nil); w.Code != 404 {
+	if w := e.do("DELETE", fmt.Sprintf("/api/archives/%d", a.ID), nil); w.Code != 404 {
 		t.Fatal(w.Code)
 	}
 }
@@ -101,7 +101,7 @@ func TestUploadDefaultsAndBearer(t *testing.T) {
 	e := newTestEnv(t)
 	b := e.create(t, "https://example.com/a")
 	ctype, body := multipartBody([][3]string{{"file", "doc.bin", "%PDF-1.4 fake"}})
-	path := fmt.Sprintf("/_/api/bookmarks/%d/archives", b.ID)
+	path := fmt.Sprintf("/api/bookmarks/%d/archives", b.ID)
 	w := e.upload(path, ctype, strings.NewReader(body.String()), true)
 	if w.Code != 201 {
 		t.Fatal(w.Code, w.Body.String())
@@ -123,7 +123,7 @@ func TestUploadDefaultsAndBearer(t *testing.T) {
 func TestUploadValidation(t *testing.T) {
 	e := newTestEnv(t)
 	b := e.create(t, "https://example.com/a")
-	path := fmt.Sprintf("/_/api/bookmarks/%d/archives", b.ID)
+	path := fmt.Sprintf("/api/bookmarks/%d/archives", b.ID)
 	send := func(path string, parts [][3]string) *httptest.ResponseRecorder {
 		ctype, body := multipartBody(parts)
 		return e.upload(path, ctype, strings.NewReader(body.String()), false)
@@ -144,7 +144,7 @@ func TestUploadValidation(t *testing.T) {
 	if list := decode[[]archiveResp](t, e.do("GET", path, nil)); len(list) != 0 {
 		t.Fatalf("archive kept after rejected upload: %+v", list)
 	}
-	if w := send("/_/api/bookmarks/999/archives", [][3]string{{"file", "a.html", "x"}}); w.Code != 404 {
+	if w := send("/api/bookmarks/999/archives", [][3]string{{"file", "a.html", "x"}}); w.Code != 404 {
 		t.Fatal("missing bookmark", w.Code)
 	}
 	// JSON content type is not a valid upload.
@@ -153,7 +153,7 @@ func TestUploadValidation(t *testing.T) {
 	}
 	// Multipart is rejected on other write routes.
 	ctype, body := multipartBody([][3]string{{"file", "a.html", "x"}})
-	if w := e.upload("/_/api/bookmarks", ctype, strings.NewReader(body.String()), false); w.Code != 415 {
+	if w := e.upload("/api/bookmarks", ctype, strings.NewReader(body.String()), false); w.Code != 415 {
 		t.Fatal("multipart elsewhere", w.Code)
 	}
 }
@@ -162,7 +162,7 @@ func TestUploadTooLarge(t *testing.T) {
 	e := newTestEnv(t, func(o *envOpts) { o.maxUpload = 1024 })
 	b := e.create(t, "https://example.com/a")
 	ctype, body := multipartBody([][3]string{{"file", "big.html", strings.Repeat("a", 4096)}})
-	w := e.upload(fmt.Sprintf("/_/api/bookmarks/%d/archives", b.ID), ctype, strings.NewReader(body.String()), false)
+	w := e.upload(fmt.Sprintf("/api/bookmarks/%d/archives", b.ID), ctype, strings.NewReader(body.String()), false)
 	if w.Code != 413 {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -183,7 +183,7 @@ func TestFileNameTraversal(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(e.dir, "secret.txt"), []byte("s"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	for _, p := range []string{"/_/favicons/..%2Fbookmarks.db", "/_/previews/..%2Fbookmarks.db", "/_/favicons/.hidden", "/_/favicons/missing.png", "/_/favicons/..%2Fsecret.txt"} {
+	for _, p := range []string{"/favicons/..%2Fbookmarks.db", "/previews/..%2Fbookmarks.db", "/favicons/.hidden", "/favicons/missing.png", "/favicons/..%2Fsecret.txt"} {
 		if w := e.do("GET", p, nil); w.Code != 404 {
 			t.Errorf("%s -> %d", p, w.Code)
 		}
@@ -193,7 +193,7 @@ func TestFileNameTraversal(t *testing.T) {
 func TestFileNameDotDotIsNotServed(t *testing.T) {
 	// The mux cleans the path and redirects; either way nothing is served.
 	e := newTestEnv(t)
-	if w := e.do("GET", "/_/favicons/..", nil); w.Code == 200 {
+	if w := e.do("GET", "/favicons/..", nil); w.Code == 200 {
 		t.Fatal(w.Code)
 	}
 }
@@ -209,7 +209,7 @@ func TestFaviconAndPreviewServing(t *testing.T) {
 	png := "\x89PNG\r\n\x1a\n" + strings.Repeat("x", 20)
 	_ = os.WriteFile(filepath.Join(e.dir, "favicons", "a.png"), []byte(svg), 0o600)
 	_ = os.WriteFile(filepath.Join(e.dir, "previews", "p.png"), []byte(png), 0o600)
-	w := e.do("GET", "/_/favicons/a.png", nil)
+	w := e.do("GET", "/favicons/a.png", nil)
 	if w.Code != 200 || w.Header().Get("Content-Type") != "image/svg+xml" || w.Body.String() != svg {
 		t.Fatal(w.Code, w.Header())
 	}
@@ -218,7 +218,7 @@ func TestFaviconAndPreviewServing(t *testing.T) {
 		w.Header().Get("Cache-Control") != "public, max-age=86400" {
 		t.Fatal(w.Header())
 	}
-	w = e.do("GET", "/_/previews/p.png", nil)
+	w = e.do("GET", "/previews/p.png", nil)
 	if w.Code != 200 || w.Header().Get("Content-Type") != "image/png" {
 		t.Fatal(w.Code, w.Header())
 	}
@@ -226,14 +226,14 @@ func TestFaviconAndPreviewServing(t *testing.T) {
 
 func archiveCount(t *testing.T, e *testEnv, bookmarkID int64) int {
 	t.Helper()
-	w := e.do("GET", fmt.Sprintf("/_/api/bookmarks/%d/archives", bookmarkID), nil)
+	w := e.do("GET", fmt.Sprintf("/api/bookmarks/%d/archives", bookmarkID), nil)
 	return len(decode[[]archiveResp](t, w))
 }
 
 func TestUploadFailureAfterFileLeavesNothing(t *testing.T) {
 	e := newTestEnv(t)
 	b := e.create(t, "https://example.com/a")
-	path := fmt.Sprintf("/_/api/bookmarks/%d/archives", b.ID)
+	path := fmt.Sprintf("/api/bookmarks/%d/archives", b.ID)
 	ctype, body := multipartBody([][3]string{{"file", "a.html", "one"}, {"file", "b.html", "two"}})
 	if w := e.upload(path, ctype, strings.NewReader(body.String()), false); w.Code != 422 {
 		t.Fatal(w.Code, w.Body.String())
@@ -258,7 +258,7 @@ func TestUploadOverBodyLimit(t *testing.T) {
 	e := newTestEnv(t, func(o *envOpts) { o.maxUpload = 1024 })
 	b := e.create(t, "https://example.com/a")
 	ctype, body := multipartBody([][3]string{{"file", "a.html", "small"}, {"pad", "", strings.Repeat("p", 2<<20)}})
-	w := e.upload(fmt.Sprintf("/_/api/bookmarks/%d/archives", b.ID), ctype, strings.NewReader(body.String()), false)
+	w := e.upload(fmt.Sprintf("/api/bookmarks/%d/archives", b.ID), ctype, strings.NewReader(body.String()), false)
 	if w.Code != 413 {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -267,7 +267,7 @@ func TestUploadOverBodyLimit(t *testing.T) {
 	}
 	// And while streaming the file part itself.
 	ctype, body = multipartBody([][3]string{{"file", "a.html", strings.Repeat("a", 2<<20)}})
-	w = e.upload(fmt.Sprintf("/_/api/bookmarks/%d/archives", b.ID), ctype, strings.NewReader(body.String()), false)
+	w = e.upload(fmt.Sprintf("/api/bookmarks/%d/archives", b.ID), ctype, strings.NewReader(body.String()), false)
 	if w.Code != 413 {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -299,8 +299,8 @@ func TestBookmarkImageURLsEndToEnd(t *testing.T) {
 	if err := st.UpdateBookmark(context.Background(), bm); err != nil {
 		t.Fatal(err)
 	}
-	w := e.do("GET", fmt.Sprintf("/_/api/bookmarks/%d", b.ID), nil)
-	for _, s := range []string{`"favicon_url":"/_/favicons/f.png"`, `"preview_image_url":"/_/previews/p.jpg"`} {
+	w := e.do("GET", fmt.Sprintf("/api/bookmarks/%d", b.ID), nil)
+	for _, s := range []string{`"favicon_url":"/favicons/f.png"`, `"preview_image_url":"/previews/p.jpg"`} {
 		if !strings.Contains(w.Body.String(), s) {
 			t.Errorf("missing %s in %s", s, w.Body)
 		}

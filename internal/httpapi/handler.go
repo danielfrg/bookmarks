@@ -28,8 +28,8 @@ type Deps struct {
 func NewHandler(assets fs.FS, deps Deps) http.Handler {
 	mux := http.NewServeMux()
 	config := huma.DefaultConfig("Bookmarks API", "0.1.0")
-	config.OpenAPIPath = "/_/api/openapi"
-	config.DocsPath = "/_/api/docs"
+	config.OpenAPIPath = "/api/openapi"
+	config.DocsPath = "/api/docs"
 	config.SchemasPath = ""
 	config.CreateHooks = nil
 	api := humago.New(mux, config)
@@ -39,28 +39,28 @@ func NewHandler(assets fs.FS, deps Deps) http.Handler {
 	registerSavedSearches(api, deps.Service)
 	registerSettings(api, deps.Service)
 	registerBulk(api, deps.Service)
-	mux.HandleFunc("POST /_/api/import/netscape", importNetscape(deps.Service))
-	mux.HandleFunc("GET /_/api/export/netscape", exportNetscape(deps.Service))
-	mux.HandleFunc("POST /_/api/bookmarks/{id}/archives", uploadArchive(deps.Service))
-	mux.HandleFunc("GET /_/archives/{id}", viewArchive(deps.Service, false))
-	mux.HandleFunc("GET /_/archives/{id}/download", viewArchive(deps.Service, true))
-	mux.HandleFunc("GET /_/favicons/{name}", serveImage(filepath.Join(deps.DataDir, "favicons")))
-	mux.HandleFunc("GET /_/previews/{name}", serveImage(filepath.Join(deps.DataDir, "previews")))
-	mux.HandleFunc("GET /_/healthz", func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, "ok\n") })
-	mux.HandleFunc("GET /_/readyz", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/import/netscape", importNetscape(deps.Service))
+	mux.HandleFunc("GET /api/export/netscape", exportNetscape(deps.Service))
+	mux.HandleFunc("POST /api/bookmarks/{id}/archives", uploadArchive(deps.Service))
+	mux.HandleFunc("GET /archives/{id}", viewArchive(deps.Service, false))
+	mux.HandleFunc("GET /archives/{id}/download", viewArchive(deps.Service, true))
+	mux.HandleFunc("GET /favicons/{name}", serveImage(filepath.Join(deps.DataDir, "favicons")))
+	mux.HandleFunc("GET /previews/{name}", serveImage(filepath.Join(deps.DataDir, "previews")))
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, "ok\n") })
+	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
 		if err := deps.Ping(r.Context()); err != nil {
 			http.Error(w, "Database unavailable", http.StatusServiceUnavailable)
 			return
 		}
 		_, _ = io.WriteString(w, "ok\n")
 	})
-	mux.Handle("/_/mcp", mcp.NewHandler(deps.Service, deps.MCPAllowedHosts, deps.APIToken))
-	mux.Handle("GET /_/assets/", web.Handler(assets))
+	mux.Handle("/mcp", mcp.NewHandler(deps.Service, deps.MCPAllowedHosts, deps.APIToken))
+	mux.Handle("GET /assets/", web.Handler(assets))
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) { web.Index(w, r, assets, http.StatusOK) })
 	guarded := protectAPI(mux, deps.APIToken, deps.MaxUploadBytes)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Referrer-Policy", "no-referrer")
-		if r.URL.Path == "/_/healthz" || r.URL.Path == "/_/readyz" {
+		if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {
 			w.Header().Set("Cache-Control", "no-store")
 		}
 		guarded.ServeHTTP(w, r)

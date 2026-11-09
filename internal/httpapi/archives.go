@@ -36,7 +36,7 @@ func toArchive(a bookmarks.Archive) archiveJSON {
 	return archiveJSON{
 		ID: a.ID, Source: string(a.Source), ContentType: a.ContentType, DisplayName: a.DisplayName,
 		FileSize: a.FileSize, CreatedAt: a.CreatedAt.UTC(),
-		ViewURL: fmt.Sprintf("/_/archives/%d", a.ID), DownloadURL: fmt.Sprintf("/_/archives/%d/download", a.ID),
+		ViewURL: fmt.Sprintf("/archives/%d", a.ID), DownloadURL: fmt.Sprintf("/archives/%d/download", a.ID),
 	}
 }
 
@@ -45,7 +45,7 @@ type archiveListOutput struct {
 }
 
 func registerArchives(api huma.API, svc *service.Service) {
-	huma.Register(api, huma.Operation{OperationID: "list-archives", Method: http.MethodGet, Path: "/_/api/bookmarks/{id}/archives", Summary: "List the archives of a bookmark"},
+	huma.Register(api, huma.Operation{OperationID: "list-archives", Method: http.MethodGet, Path: "/api/bookmarks/{id}/archives", Summary: "List the archives of a bookmark"},
 		func(ctx context.Context, in *idInput) (*archiveListOutput, error) {
 			list, err := svc.ListArchives(ctx, in.ID)
 			if err != nil {
@@ -58,7 +58,7 @@ func registerArchives(api huma.API, svc *service.Service) {
 			return out, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "delete-archive", Method: http.MethodDelete, Path: "/_/api/archives/{id}", Summary: "Delete an archive", DefaultStatus: http.StatusNoContent},
+	huma.Register(api, huma.Operation{OperationID: "delete-archive", Method: http.MethodDelete, Path: "/api/archives/{id}", Summary: "Delete an archive", DefaultStatus: http.StatusNoContent},
 		func(ctx context.Context, in *idInput) (*emptyOutput, error) {
 			if err := svc.DeleteArchive(ctx, in.ID); err != nil {
 				return nil, apiError(err)
@@ -67,7 +67,7 @@ func registerArchives(api huma.API, svc *service.Service) {
 		})
 }
 
-// uploadArchive handles POST /_/api/bookmarks/{id}/archives (multipart).
+// uploadArchive handles POST /api/bookmarks/{id}/archives (multipart).
 //
 // It is a plain handler instead of a Huma operation so the file part streams
 // from the request to disk through r.MultipartReader (ParseMultipartForm would

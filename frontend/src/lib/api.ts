@@ -165,7 +165,7 @@ function qs(params: Record<string, string | number | undefined>): string {
   return s ? `?${s}` : "";
 }
 
-const base = "/_/api";
+const base = "/api";
 const body = (value: unknown) => JSON.stringify(value);
 
 export const api = {

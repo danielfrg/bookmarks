@@ -45,7 +45,7 @@ func toSettings(s bookmarks.Settings) settingsJSON {
 }
 
 func registerSettings(api huma.API, svc *service.Service) {
-	huma.Register(api, huma.Operation{OperationID: "get-settings", Method: http.MethodGet, Path: "/_/api/settings", Summary: "Get the settings"},
+	huma.Register(api, huma.Operation{OperationID: "get-settings", Method: http.MethodGet, Path: "/api/settings", Summary: "Get the settings"},
 		func(ctx context.Context, _ *struct{}) (*settingsOutput, error) {
 			s, err := svc.Settings(ctx)
 			if err != nil {
@@ -54,7 +54,7 @@ func registerSettings(api huma.API, svc *service.Service) {
 			return &settingsOutput{Body: toSettings(s)}, nil
 		})
 
-	huma.Register(api, huma.Operation{OperationID: "put-settings", Method: http.MethodPut, Path: "/_/api/settings", Summary: "Replace the settings",
+	huma.Register(api, huma.Operation{OperationID: "put-settings", Method: http.MethodPut, Path: "/api/settings", Summary: "Replace the settings",
 		Description: "The whole settings object is replaced: omitted fields become false, empty or {}."},
 		func(ctx context.Context, in *putSettingsInput) (*settingsOutput, error) {
 			ui := json.RawMessage(`{}`)

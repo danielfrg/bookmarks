@@ -12,7 +12,7 @@ import (
 
 func TestCreateThenUpsert(t *testing.T) {
 	e := newTestEnv(t)
-	w := e.do("POST", "/_/api/bookmarks?capture=none", map[string]any{"url": "https://example.com/a", "title": "One", "tags": []string{"Go", "web"}})
+	w := e.do("POST", "/api/bookmarks?capture=none", map[string]any{"url": "https://example.com/a", "title": "One", "tags": []string{"Go", "web"}})
 	if w.Code != 201 {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -20,7 +20,7 @@ func TestCreateThenUpsert(t *testing.T) {
 	if first.ID == 0 || first.Title != "One" || len(first.Tags) != 2 || first.ReaderStatus != "none" {
 		t.Fatalf("%+v", first)
 	}
-	w = e.do("POST", "/_/api/bookmarks?capture=none", map[string]any{"url": "https://example.com/a", "title": "Two"})
+	w = e.do("POST", "/api/bookmarks?capture=none", map[string]any{"url": "https://example.com/a", "title": "Two"})
 	if w.Code != 200 {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -33,7 +33,7 @@ func TestCreateThenUpsert(t *testing.T) {
 func TestBookmarkCRUDAndErrors(t *testing.T) {
 	e := newTestEnv(t)
 	b := e.create(t, "https://example.com/a")
-	path := fmt.Sprintf("/_/api/bookmarks/%d", b.ID)
+	path := fmt.Sprintf("/api/bookmarks/%d", b.ID)
 
 	if w := e.do("GET", path, nil); w.Code != 200 {
 		t.Fatal(w.Code)
@@ -46,17 +46,17 @@ func TestBookmarkCRUDAndErrors(t *testing.T) {
 	if !got.Unread || got.Title != "T" || len(got.Tags) != 1 {
 		t.Fatalf("%+v", got)
 	}
-	if w := e.do("GET", "/_/api/bookmarks/9999", nil); w.Code != 404 {
+	if w := e.do("GET", "/api/bookmarks/9999", nil); w.Code != 404 {
 		t.Fatal(w.Code)
 	}
-	if w := e.do("POST", "/_/api/bookmarks", map[string]any{"url": "ftp://nope"}); w.Code != 422 {
+	if w := e.do("POST", "/api/bookmarks", map[string]any{"url": "ftp://nope"}); w.Code != 422 {
 		t.Fatal(w.Code, w.Body.String())
 	}
-	if w := e.do("POST", "/_/api/bookmarks?capture=bogus", map[string]any{"url": "https://example.com/z"}); w.Code != 422 {
+	if w := e.do("POST", "/api/bookmarks?capture=bogus", map[string]any{"url": "https://example.com/z"}); w.Code != 422 {
 		t.Fatal(w.Code, w.Body.String())
 	}
 	other := e.create(t, "https://example.com/b")
-	w = e.do("PATCH", fmt.Sprintf("/_/api/bookmarks/%d", other.ID), map[string]any{"url": "https://example.com/a"})
+	w = e.do("PATCH", fmt.Sprintf("/api/bookmarks/%d", other.ID), map[string]any{"url": "https://example.com/a"})
 	if w.Code != 409 {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -72,7 +72,7 @@ func TestListShape(t *testing.T) {
 	e := newTestEnv(t)
 	e.create(t, "https://example.com/a")
 	e.create(t, "https://example.com/b")
-	w := e.do("GET", "/_/api/bookmarks?limit=1", nil)
+	w := e.do("GET", "/api/bookmarks?limit=1", nil)
 	if w.Code != 200 {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -92,10 +92,10 @@ func TestListShape(t *testing.T) {
 			t.Errorf("missing %s in %s", k, w.Body)
 		}
 	}
-	if w := e.do("GET", "/_/api/bookmarks?q=example&unread=maybe", nil); w.Code != 422 {
+	if w := e.do("GET", "/api/bookmarks?q=example&unread=maybe", nil); w.Code != 422 {
 		t.Fatal(w.Code, w.Body.String())
 	}
-	if w := e.do("GET", "/_/api/bookmarks?q=b", nil); w.Code != 200 || !strings.Contains(w.Body.String(), `"count":1`) {
+	if w := e.do("GET", "/api/bookmarks?q=b", nil); w.Code != 200 || !strings.Contains(w.Body.String(), `"count":1`) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 }
@@ -108,7 +108,7 @@ func TestCheckEndpoint(t *testing.T) {
 	defer page.Close()
 	e := newTestEnv(t)
 	u := page.URL + "/page"
-	w := e.do("GET", "/_/api/bookmarks/check?url="+u, nil)
+	w := e.do("GET", "/api/bookmarks/check?url="+u, nil)
 	if w.Code != 200 {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -118,11 +118,11 @@ func TestCheckEndpoint(t *testing.T) {
 		}
 	}
 	b := e.create(t, u)
-	w = e.do("GET", "/_/api/bookmarks/check?url="+u, nil)
+	w = e.do("GET", "/api/bookmarks/check?url="+u, nil)
 	if !strings.Contains(w.Body.String(), fmt.Sprintf(`"id":%d`, b.ID)) {
 		t.Fatal(w.Body.String())
 	}
-	if w := e.do("GET", "/_/api/bookmarks/check?url=nope", nil); w.Code != 422 {
+	if w := e.do("GET", "/api/bookmarks/check?url=nope", nil); w.Code != 422 {
 		t.Fatal(w.Code)
 	}
 }
@@ -130,7 +130,7 @@ func TestCheckEndpoint(t *testing.T) {
 func TestReaderEndpoint(t *testing.T) {
 	e := newTestEnv(t)
 	b := e.create(t, "https://example.com/a")
-	w := e.do("GET", fmt.Sprintf("/_/api/bookmarks/%d/reader", b.ID), nil)
+	w := e.do("GET", fmt.Sprintf("/api/bookmarks/%d/reader", b.ID), nil)
 	if w.Code != 200 {
 		t.Fatal(w.Code, w.Body.String())
 	}
@@ -139,10 +139,10 @@ func TestReaderEndpoint(t *testing.T) {
 			t.Errorf("missing %s in %s", s, w.Body)
 		}
 	}
-	if w := e.do("GET", fmt.Sprintf("/_/api/bookmarks/%d/reader?offset=5", b.ID), nil); w.Code != 422 {
+	if w := e.do("GET", fmt.Sprintf("/api/bookmarks/%d/reader?offset=5", b.ID), nil); w.Code != 422 {
 		t.Fatal(w.Code, w.Body.String())
 	}
-	if w := e.do("GET", "/_/api/bookmarks/999/reader", nil); w.Code != 404 {
+	if w := e.do("GET", "/api/bookmarks/999/reader", nil); w.Code != 404 {
 		t.Fatal(w.Code)
 	}
 }
@@ -151,10 +151,10 @@ func TestCaptureAndExtractAccepted(t *testing.T) {
 	e := newTestEnv(t)
 	b := e.create(t, "https://example.com/a")
 	for _, p := range []string{"capture", "reader/extract"} {
-		if w := e.do("POST", fmt.Sprintf("/_/api/bookmarks/%d/%s", b.ID, p), nil); w.Code != 202 {
+		if w := e.do("POST", fmt.Sprintf("/api/bookmarks/%d/%s", b.ID, p), nil); w.Code != 202 {
 			t.Fatal(p, w.Code, w.Body.String())
 		}
-		if w := e.do("POST", fmt.Sprintf("/_/api/bookmarks/%d/%s", 999, p), nil); w.Code != 404 {
+		if w := e.do("POST", fmt.Sprintf("/api/bookmarks/%d/%s", 999, p), nil); w.Code != 404 {
 			t.Fatal(p, w.Code)
 		}
 	}
@@ -162,19 +162,19 @@ func TestCaptureAndExtractAccepted(t *testing.T) {
 
 func TestToBookmarkImageURLs(t *testing.T) {
 	j := toBookmark(bookmarks.Bookmark{FaviconFile: "f.png", PreviewFile: "p.jpg"})
-	if j.FaviconURL != "/_/favicons/f.png" || j.PreviewImageURL != "/_/previews/p.jpg" || j.Tags == nil || j.ReaderStatus != "none" {
+	if j.FaviconURL != "/favicons/f.png" || j.PreviewImageURL != "/previews/p.jpg" || j.Tags == nil || j.ReaderStatus != "none" {
 		t.Fatalf("%+v", j)
 	}
 }
 
 func TestUnknownFieldsAccepted(t *testing.T) {
 	e := newTestEnv(t)
-	w := e.do("POST", "/_/api/bookmarks?capture=none", map[string]any{"url": "https://example.com/x", "future_field": 1})
+	w := e.do("POST", "/api/bookmarks?capture=none", map[string]any{"url": "https://example.com/x", "future_field": 1})
 	if w.Code != 201 {
 		t.Fatal(w.Code, w.Body.String())
 	}
 	id := decode[bookmarkResp](t, w).ID
-	if w := e.do("PATCH", fmt.Sprintf("/_/api/bookmarks/%d", id), map[string]any{"title": "n", "future_field": []int{1}}); w.Code != 200 {
+	if w := e.do("PATCH", fmt.Sprintf("/api/bookmarks/%d", id), map[string]any{"title": "n", "future_field": []int{1}}); w.Code != 200 {
 		t.Fatal(w.Code, w.Body.String())
 	}
 }

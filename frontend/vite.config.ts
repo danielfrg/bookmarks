@@ -10,17 +10,17 @@ export default defineConfig({
   plugins: [svelte()],
   // Kit UI ships Svelte/TypeScript source; compile it with the app.
   optimizeDeps: { exclude: ["@kenn-io/kit-ui"] },
-  base: "/_/assets/",
+  base: "/assets/",
   resolve: { alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) } },
   server: {
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,
     proxy: {
-      "/_/api": { ...proxied },
-      "/_/archives": { ...proxied },
-      "/_/favicons": { ...proxied },
-      "/_/previews": { ...proxied },
+      "/api": { ...proxied },
+      "/archives": { ...proxied },
+      "/favicons": { ...proxied },
+      "/previews": { ...proxied },
     },
   },
 });

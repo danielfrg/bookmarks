@@ -36,7 +36,7 @@ func TestAuthMatrix(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			e := newTestEnv(t, func(o *envOpts) { o.noToken = c.noToken })
-			path := "/_/api/bookmarks"
+			path := "/api/bookmarks"
 			var body *strings.Reader
 			if c.method == "POST" {
 				body = strings.NewReader(`{"url":"https://example.com/a"}`)
@@ -75,7 +75,7 @@ func TestAuthMatrix(t *testing.T) {
 
 func TestWriteRequiresJSONBody(t *testing.T) {
 	e := newTestEnv(t)
-	r := httptest.NewRequest("POST", "/_/api/bookmarks", strings.NewReader("url=x"))
+	r := httptest.NewRequest("POST", "/api/bookmarks", strings.NewReader("url=x"))
 	r.Header.Set("X-Bookmarks", "1")
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
@@ -88,7 +88,7 @@ func TestWriteRequiresJSONBody(t *testing.T) {
 func TestJSONBodyLimit(t *testing.T) {
 	e := newTestEnv(t)
 	big := strings.Repeat("a", 2<<20)
-	r := httptest.NewRequest("POST", "/_/api/bookmarks", strings.NewReader(`{"url":"https://example.com","notes":"`+big+`"}`))
+	r := httptest.NewRequest("POST", "/api/bookmarks", strings.NewReader(`{"url":"https://example.com","notes":"`+big+`"}`))
 	r.Header.Set("X-Bookmarks", "1")
 	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()

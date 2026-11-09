@@ -109,7 +109,7 @@ type bookmarkResp struct {
 
 func (e *testEnv) create(t *testing.T, url string) bookmarkResp {
 	t.Helper()
-	w := e.do("POST", "/_/api/bookmarks?capture=none", map[string]any{"url": url, "title": "T"})
+	w := e.do("POST", "/api/bookmarks?capture=none", map[string]any{"url": url, "title": "T"})
 	if w.Code != 201 {
 		t.Fatal(w.Code, w.Body.String())
 	}
