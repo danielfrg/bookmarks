@@ -1,14 +1,30 @@
 set dotenv-load := true
 
 install:
-    [ -d frontend ] && pnpm --dir frontend install --frozen-lockfile || true
+    pnpm --dir frontend install --frozen-lockfile
 
 api:
     go run ./cmd/bookmarks
 
+frontend:
+    pnpm --dir frontend dev
+
 check:
     go test -race ./...
     go vet ./...
+    pnpm --dir frontend test
+    pnpm --dir frontend check
 
-build:
+build: install
+    pnpm --dir frontend test
+    pnpm --dir frontend check
+    pnpm --dir frontend build
+    test -s frontend/dist/index.html
+    rm -rf internal/web/dist
+    mkdir -p internal/web/dist
+    touch internal/web/dist/.keep
+    cp -R frontend/dist/. internal/web/dist/
+    test -s internal/web/dist/index.html
+    go test ./...
+    go vet ./...
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bookmarks ./cmd/bookmarks

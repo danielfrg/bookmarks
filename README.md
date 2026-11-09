@@ -57,3 +57,12 @@ All settings are environment variables.
 
 Requires Go, Node, pnpm and [just](https://github.com/casey/just).
 See the `justfile` for the available recipes.
+
+```sh
+just install   # frontend dependencies
+just api       # Go API on 127.0.0.1:8080
+just frontend  # Vite dev server on 127.0.0.1:5173, proxies /_/api etc. to the API
+```
+
+Set `BOOKMARKS_API_TARGET` to point the dev server at a different API address.
+`just build` tests and builds the frontend, embeds it in `internal/web/dist` and builds the `bookmarks` binary.
