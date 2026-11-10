@@ -36,9 +36,6 @@ func TestNetscapeRoundTrip(t *testing.T) {
 	if !strings.HasPrefix(buf.String(), "<!DOCTYPE NETSCAPE-Bookmark-file-1>") {
 		t.Fatalf("bad header: %q", buf.String())
 	}
-	if strings.Contains(buf.String(), "linkding:bookmarks.archived") {
-		t.Fatal("export must not write the linkding archived pseudo-tag")
-	}
 
 	dst := newEnv(t)
 	res, err := dst.svc.ImportNetscape(ctx, bytes.NewReader(buf.Bytes()))
@@ -88,16 +85,16 @@ func TestNetscapeRoundTrip(t *testing.T) {
 	}
 }
 
-func TestImportLinkdingExport(t *testing.T) {
-	// Shape of a real linkding export: CRLF-ish, unclosed <DT>/<DD>/<p>, mixed case
-	// attributes, millisecond timestamps, an invalid URL and the pseudo-tag.
+func TestImportNetscapeFile(t *testing.T) {
+	// A typical exported file: CRLF-ish, unclosed <DT>/<DD>/<p>, mixed case
+	// attributes, millisecond timestamps and an invalid URL.
 	const file = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
 <TITLE>Bookmarks</TITLE>
 <H1>Bookmarks</H1>
 <DL><p>
-<DT><A HREF="https://example.com/1" ADD_DATE="1616337559" LAST_MODIFIED="1616337600" PRIVATE="0" TOREAD="1" TAGS="Tag1,tag2,linkding:bookmarks.archived">test title 1</A>
-<DD>test description 1[linkding-notes]some &lt;notes&gt;[/linkding-notes]
+<DT><A HREF="https://example.com/1" ADD_DATE="1616337559" LAST_MODIFIED="1616337600" PRIVATE="0" TOREAD="1" TAGS="Tag1,tag2">test title 1</A>
+<DD>test description 1[bookmarks-notes]some &lt;notes&gt;[/bookmarks-notes]
 <DT><A HREF="https://example.com/2" ADD_DATE="1616337559000" PRIVATE="1" TOREAD="0" TAGS="">test title 2</A>
 <DT><A HREF="not a url" ADD_DATE="1616337559">bad</A>
 <DD>bad desc
@@ -127,16 +124,6 @@ func TestImportLinkdingExport(t *testing.T) {
 	b4, err := e.svc.st.GetBookmarkByURL(context.Background(), "https://example.com/4")
 	if err != nil || b4.Description != "" {
 		t.Errorf("bookmark 4 = %+v, %v", b4, err)
-	}
-	// linkding's archived pseudo-tag is dropped, never turned into a real tag.
-	tags, err := e.svc.Tags(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, tg := range tags {
-		if strings.Contains(tg.Name, "linkding") {
-			t.Errorf("pseudo-tag imported as a tag: %+v", tg)
-		}
 	}
 }
 

@@ -26,7 +26,7 @@ type token struct {
 	pos   int // rune offset
 }
 
-// lex mirrors linkding's SearchQueryTokenizer, including its leniency: a lone
+// lex tokenizes a query leniently: a lone
 // "#" or "!" is dropped, an unclosed quote runs to the end of the input, and a
 // bare word stops at any of ( ) " ' # !.
 func lex(s string) []token {

@@ -40,7 +40,7 @@ func ValidateURL(raw string) (string, error) {
 }
 
 // parsedURL mirrors the pieces of Python's urllib.parse.urlparse result that
-// linkding's normalization and auto-tagging rely on. Components are raw (not
+// normalization and auto-tagging rely on. Components are raw (not
 // percent-decoded).
 type parsedURL struct {
 	scheme   string
@@ -124,7 +124,7 @@ var usesNetloc = map[string]bool{
 	"git+ssh": true, "ws": true, "wss": true,
 }
 
-// NormalizeURL is a port of linkding's bookmarks/utils.py normalize_url:
+// NormalizeURL normalizes a URL for duplicate detection:
 // lower-case scheme and host, keep userinfo and explicit port, strip trailing
 // slashes from the path, sort query parameters by (key, value) and re-encode
 // them, keep the fragment. Input that cannot be parsed is returned trimmed.

@@ -73,7 +73,7 @@ func TestParseCanonical(t *testing.T) {
 			"(and (and (and (and machine learning) (or python r)) tutorial) #beginner)"},
 		{"frontend and (react or vue or angular) and not jquery",
 			"(and (and frontend (or (or react vue) angular)) (not jquery))"},
-		// Terms split at special characters, like linkding.
+		// Terms split at special characters.
 		{"foo#bar", "(and foo #bar)"},
 		{"foo(bar)", "(and foo bar)"},
 		{"  a   and    b  ", "(and a b)"},

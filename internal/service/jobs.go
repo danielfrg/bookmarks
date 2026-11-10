@@ -203,7 +203,7 @@ func (s *Service) extractJob(ctx context.Context, j jobs.Job) error {
 }
 
 // waybackJob asks the Wayback Machine to save the page and records the
-// snapshot URL (linkding's fallback when the final URL is not a snapshot).
+// snapshot URL (the fallback when the final URL is not a snapshot).
 func (s *Service) waybackJob(ctx context.Context, j jobs.Job) error {
 	b, ok, err := s.jobBookmark(ctx, j.BookmarkID)
 	if !ok {

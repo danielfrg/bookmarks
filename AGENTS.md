@@ -1,16 +1,13 @@
 # Agent Instructions
 
-Bookmarks is a self-hosted, single-user bookmark manager modeled on linkding
-(source at `~/code/linkding`). One Go binary serves a Huma REST API, an MCP
-endpoint, and an embedded Svelte 5 frontend backed by SQLite. A Chrome extension
+Bookmarks is a self-hosted, single-user bookmark manager.
+One Go binary serves a Huma REST API, an MCP endpoint, and an embedded Svelte 5
+frontend backed by SQLite. A Chrome extension
 in `/extension` saves bookmarks and uploads full-page archives.
 
 Read `PRODUCT.md` for user intent and `DESIGN.md` before changing the frontend.
 The `README.md` and `justfile` are for humans: keep them current when changes are
 user facing, avoid big restructures.
-
-Local, untracked design notes may exist in `docs/superpowers/` (gitignored on
-purpose; never commit them).
 
 ## Architecture
 
@@ -22,9 +19,9 @@ purpose; never commit them).
 ## Vocabulary
 
 - **Archive**: a saved full-page file (single-file HTML, PDF, or upload). Each
-  has a source: `extension`, `server`, `upload`, or `import` (archives migrated
-  from linkding; nothing creates new ones). There is no
-  linkding-style "archived bookmark" state; archive always means the file.
+  has a source: `extension`, `server`, `upload`, or `import` (archives from a
+  one-time migration; nothing creates new ones). There is no "archived
+  bookmark" state; archive always means the file.
 - **Basic capture**: a `server`-source archive (Go fetch, no JavaScript). A
   bookmark with only basic captures shows a badge until the extension adds a full one.
 - **Reader text**: markdown extracted from the latest archive. Separate from

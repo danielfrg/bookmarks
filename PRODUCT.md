@@ -2,7 +2,7 @@
 
 ## Users
 
-One person (Daniel) saving links from the browser, and the agents he works with.
+One person saving links from the browser, and the agents he works with.
 Assumes deployment on a trusted network or behind Cloudflare Access; there are
 no accounts.
 
@@ -19,19 +19,18 @@ the original page disappearing, and agents that can answer from saved content.
 
 ## Brand Personality
 
-Simple, dense, quiet. Like linkding: the list of bookmarks is the interface.
+Simple, dense, quiet. The list of bookmarks is the interface.
 
 ### Tone
 
-Don't explain every part of the UI with text. Add messages only when needed
-(errors, a basic capture waiting for a full one, an expired Cloudflare session).
+- Don't explain every part of the UI with text.
+- Add messages only when needed (errors, a basic capture waiting for a full one, an expired Cloudflare session).
 
 ## Anti-references
 
 - An extension that depends on another extension or needs more setup than a
   server URL and a token.
-- Losing archives, including those migrated from linkding.
-- Drifting from linkding's simple structure: no dashboards, no sidebar navigation.
+- Losing archives, including migrated ones.
 - Handing agents raw HTML or unbounded text.
 
 ## Design Principles

@@ -5,7 +5,7 @@ A bookmark manager.
 - One Chrome extension saves the bookmark and a full-page archive
   (SingleFile-style) of the page as you see it.
 - Every archive gets a stored reader-text version, indexed for full-text search.
-- REST API and an MCP server, so agents can search and read your bookmarks.
+- REST API and an MCP (`/mcp`) server, so agents can search and read your bookmarks.
 - SQLite storage; one Go binary with the web UI embedded.
 
 ![Bookmarks](docs/screenshot.png)
@@ -69,34 +69,21 @@ All settings are environment variables.
 
 ## Endpoints
 
-- `/api/docs`: interactive API documentation (OpenAPI at `/api/openapi`)
 - `/mcp`: MCP server (search and read bookmarks)
+- `/api/docs`: interactive API documentation (OpenAPI at `/api/openapi`)
 - `/healthz`, `/readyz`: health checks
 
 ## API tokens
 
 Create API tokens in the web UI under **Settings → API**: give each app its own
-named token (the Chrome extension, an agent). The full token
-(`bk_…`) is shown once, when it is created; the server stores only its hash.
-Clients send it as `Authorization: Bearer <token>` (linkding's
-`Authorization: Token <token>` also works). Deleting a token revokes it
-immediately. Tokens can only be managed from the web UI: `/api/tokens`
-rejects requests that carry a token.
-
-The web UI itself needs no token (put the app behind your own access control).
-MCP is open on its allowed hosts; a request that does send a token must send a
-valid one.
+named token (the Chrome extension, an agent).
 
 ## Development
 
-Requires Go, Node, pnpm and [just](https://github.com/casey/just).
-See the `justfile` for the available recipes.
+Requires Go, Node, pnpm.
 
 ```sh
 just install   # frontend dependencies
 just api       # Go API on 127.0.0.1:8080
 just frontend  # Vite dev server on 127.0.0.1:5173, proxies /api etc. to the API
 ```
-
-Set `BOOKMARKS_API_TARGET` to point the dev server at a different API address.
-`just build` tests and builds the frontend, embeds it in `internal/web/dist` and builds the `bookmarks` binary.

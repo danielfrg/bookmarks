@@ -1,7 +1,7 @@
 # Design System
 
-Bookmarks shares the look of Daniel's other self-hosted apps and the layout of
-linkding. Use a small, consistent vocabulary instead of one-off styling.
+Bookmarks shares the look of Daniel's other self-hosted apps. Use a small,
+consistent vocabulary instead of one-off styling.
 
 ## Component Rules
 
@@ -25,18 +25,19 @@ Preserve `scrollbar-gutter: stable`.
 
 ## Application Patterns
 
-Linkding's structure:
+Structure:
 
 - **Main page:** no left sidebar. Top bar: wordmark, search (accepts the query
   syntax: `#tag`, `!unread`, `!untagged`, `!basic`, `!noarchive`, `and/or/not`, quotes),
-  All / Unread filter pills (All is the default), Add. A dense bookmark list; a right
+  All / Unread filter pills (All is the default), Add, Select, sort, help. A dense
+  bookmark list; a right
   panel with Saved searches, then an A–Z grouped tag cloud.
 - **List row:** favicon, title (unread dot; clicking opens the live page), one-line
   description, tags, relative date, `archived` / `basic capture` badge (the
-  bookmark has a saved page file), actions View, Edit, Mark read (when unread),
-  Delete. Unlike linkding there is no archived-bookmark state: "archive" always
-  means a saved page file.
-- **Details modal (View):** title + URL, tags, description, an **Archive** section
+  bookmark has a saved page file), actions View (opens the newest archive),
+  Details, Edit, Mark read (when unread), Delete. There is no archived-bookmark
+  state: "archive" always means a saved page file.
+- **Details modal (Details):** title + URL, tags, description, an **Archive** section
   (saved snapshots: source, date, size, Open, Download; capture again, upload,
   Wayback link), a separate **Reader text** section (word count, Read,
   Re-extract), notes (markdown), unread toggle, dates; footer Edit / Delete.

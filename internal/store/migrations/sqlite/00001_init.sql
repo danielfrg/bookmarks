@@ -7,7 +7,6 @@ CREATE TABLE bookmarks (
     description    TEXT NOT NULL DEFAULT '',
     notes          TEXT NOT NULL DEFAULT '',
     unread         INTEGER NOT NULL DEFAULT 0,
-    is_archived    INTEGER NOT NULL DEFAULT 0,
     favicon_file   TEXT NOT NULL DEFAULT '',
     preview_file   TEXT NOT NULL DEFAULT '',
     web_archive_url TEXT NOT NULL DEFAULT '',

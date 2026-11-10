@@ -1,6 +1,6 @@
-// Package query parses linkding-style search queries into an AST.
+// Package query parses search queries into an AST.
 //
-// Grammar (same as linkding's search_query_parser.py): words, "quoted
+// Grammar: words, "quoted
 // phrases" (single or double quotes, backslash escapes), #tag, !keyword,
 // case-insensitive and/or/not, parentheses, and implicit AND between adjacent
 // operands. Precedence is NOT > AND > OR; AND and OR are left-associative.

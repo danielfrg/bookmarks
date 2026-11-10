@@ -184,8 +184,8 @@ func importReq(e *testEnv, content string) *httptest.ResponseRecorder {
 
 func TestNetscapeImportExportEndpoints(t *testing.T) {
 	e := newTestEnv(t)
-	w := importReq(e, `<DL><p><DT><A HREF="https://a.example/" ADD_DATE="1616337559" TAGS="x,linkding:bookmarks.archived" TOREAD="1">A &amp; B</A>
-<DD>desc[linkding-notes]n[/linkding-notes]
+	w := importReq(e, `<DL><p><DT><A HREF="https://a.example/" ADD_DATE="1616337559" TAGS="x" TOREAD="1">A &amp; B</A>
+<DD>desc[bookmarks-notes]n[/bookmarks-notes]
 <DT><A HREF="nope">bad</A></DL>`)
 	if w.Code != 200 {
 		t.Fatal(w.Code, w.Body.String())
@@ -200,7 +200,7 @@ func TestNetscapeImportExportEndpoints(t *testing.T) {
 		t.Fatal(w.Code, w.Header())
 	}
 	body := w.Body.String()
-	for _, want := range []string{"<!DOCTYPE NETSCAPE-Bookmark-file-1>", `HREF="https://a.example/"`, "A &amp; B", `TAGS="x"`, `TOREAD="1"`, "[linkding-notes]n[/linkding-notes]"} {
+	for _, want := range []string{"<!DOCTYPE NETSCAPE-Bookmark-file-1>", `HREF="https://a.example/"`, "A &amp; B", `TAGS="x"`, `TOREAD="1"`, "[bookmarks-notes]n[/bookmarks-notes]"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("export lacks %q:\n%s", want, body)
 		}

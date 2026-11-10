@@ -16,14 +16,11 @@ import (
 	"golang.org/x/net/html"
 )
 
-// Netscape bookmark files use linkding's conventions: notes live inside the
-// <DD> description between these markers. linkding also marks its archived
-// bookmarks with a pseudo-tag; this app has no such state, so an import drops
-// that tag (it never becomes a real tag) and an export never writes it.
+// In Netscape bookmark files, notes live inside the <DD> description between
+// these markers.
 const (
-	notesOpen           = "[linkding-notes]"
-	notesClose          = "[/linkding-notes]"
-	linkdingArchivedTag = "linkding:bookmarks.archived"
+	notesOpen  = "[bookmarks-notes]"
+	notesClose = "[/bookmarks-notes]"
 )
 
 // ImportResult counts what an import did.
@@ -130,11 +127,7 @@ func (e *netscapeEntry) setAttr(key, val string) {
 	case "tags":
 		for _, t := range strings.Split(val, ",") {
 			t = strings.TrimSpace(t)
-			switch {
-			case t == "":
-			case strings.EqualFold(t, linkdingArchivedTag):
-				// Dropped: not a tag, and there is no archived state.
-			default:
+			if t != "" {
 				e.tags = append(e.tags, t)
 			}
 		}
@@ -158,7 +151,7 @@ func unixTime(s string) *time.Time {
 	return &t
 }
 
-// splitNotes separates the description from the [linkding-notes] section.
+// splitNotes separates the description from the notes section.
 func splitNotes(desc string) (description, notes string) {
 	i := strings.Index(desc, notesOpen)
 	if i < 0 {
@@ -192,7 +185,7 @@ func (s *Service) ImportNetscape(ctx context.Context, r io.Reader) (ImportResult
 		if e.notes != "" {
 			in.Notes = &e.notes
 		}
-		// Like linkding, importing over an existing bookmark merges: tags are
+		// Importing over an existing bookmark merges: tags are
 		// unioned and empty or absent file values never erase what is stored.
 		if u, err := validateURL(e.href); err == nil {
 			existing, err := s.st.GetBookmarkByURL(ctx, u)
@@ -231,8 +224,8 @@ func (s *Service) ImportNetscape(ctx context.Context, r io.Reader) (ImportResult
 
 const exportPageSize = 500
 
-// ExportNetscape writes every bookmark as a Netscape
-// bookmark file in linkding's format, oldest first.
+// ExportNetscape writes every bookmark as a Netscape bookmark file, oldest
+// first.
 //
 // Every bookmark is loaded before the first byte is written, so a search
 // failure surfaces as an error instead of a truncated file.

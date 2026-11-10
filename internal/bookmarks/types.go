@@ -21,7 +21,7 @@ const (
 	SourceExtension ArchiveSource = "extension"
 	SourceServer    ArchiveSource = "server"
 	SourceUpload    ArchiveSource = "upload"
-	SourceImport    ArchiveSource = "import" // migrated from linkding; not accepted for new archives
+	SourceImport    ArchiveSource = "import" // from a one-time migration; not accepted for new archives
 )
 
 type Bookmark struct {

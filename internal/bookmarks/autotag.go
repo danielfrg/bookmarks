@@ -9,7 +9,7 @@ import (
 
 var commentRe = regexp.MustCompile(`\s+#`)
 
-// AutoTags is a port of linkding's services/auto_tagging.py. Each rule line is
+// AutoTags applies the auto-tagging rules to a URL. Each rule line is
 // "<url-pattern> <tag> [<tag>...]" with optional "# comments". The pattern host
 // matches the URL host or any parent-domain suffix match, the path and fragment
 // are prefix matches, and every query parameter of the pattern must be present

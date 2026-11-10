@@ -26,7 +26,7 @@ type ArchiveInput struct {
 }
 
 // validSource reports whether a new archive may have source s. "import" only
-// labels archives migrated from linkding.
+// labels archives from a one-time migration.
 func validSource(s bookmarks.ArchiveSource) bool {
 	switch s {
 	case bookmarks.SourceExtension, bookmarks.SourceServer, bookmarks.SourceUpload:
