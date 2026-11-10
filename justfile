@@ -28,3 +28,9 @@ build: install
     go test ./...
     go vet ./...
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bookmarks ./cmd/bookmarks
+
+image:
+    docker build -t bookmarks:local .
+
+image-check: image
+    bash scripts/container-smoke.sh bookmarks:local

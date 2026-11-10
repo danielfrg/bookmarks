@@ -23,6 +23,24 @@ A self-hosted, single-user bookmark manager inspired by
 
 ## Run
 
+### Docker
+
+```zsh
+docker run -it \
+  -p 127.0.0.1:8080:8080 \
+  -v bookmarks-data:/data \
+  -e BOOKMARKS_PUBLIC_URL=http://localhost:8080 \
+  ghcr.io/danielfrg/bookmarks:latest
+```
+
+- Open [http://localhost:8080](http://localhost:8080)
+- The SQLite database, favicons, previews and archives are stored in `/data`
+- The container runs as UID/GID 65532
+
+Published images support Linux AMD64 and ARM64. `latest` tracks `main`.
+
+### From source
+
 ```sh
 just api
 ```

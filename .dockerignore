@@ -1,0 +1,16 @@
+.git
+.github
+.superpowers/
+docs/superpowers/
+.worktrees/
+extension/
+**/node_modules
+data/
+backups/
+frontend/dist/
+internal/web/dist/*
+!internal/web/dist/.keep
+*.db
+*.db-*
+.env
+.env.*
