@@ -7,7 +7,7 @@ import "../src/components.css";
 
 const THEME_KEY = "bookmarks-ext-theme";
 
-/** Applies the shared homelab theme (dark by default) and mounts a page. */
+/** Applies the shared theme (dark by default) and mounts a page. */
 export function boot(App: Component) {
   initTheme({ storageKey: THEME_KEY });
   try {

@@ -1,4 +1,4 @@
-/* Application aliases resolve from the shared theme tokens (same as the homelab apps). */
+/* Application aliases resolve from the shared theme tokens. */
 :root {
   scrollbar-gutter: stable;
   --background: var(--bg-primary);

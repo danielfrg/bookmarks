@@ -175,8 +175,8 @@ export default defineBackground({
       ) {
         return false;
       }
-      // relayFetch keeps public pages away from loopback/LAN hosts (homelab
-      // admin UIs), including via redirects; see lib/relay.ts.
+      // relayFetch keeps public pages away from loopback/LAN hosts (router
+      // and other admin UIs), including via redirects; see lib/relay.ts.
       const senderURL = sender.url ?? sender.tab.url;
       relayFetch(message, (url, init) => fetch(url, init), { senderURL }).then(
         (res) => sendResponse(res),

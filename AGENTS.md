@@ -13,8 +13,6 @@ user facing, avoid big restructures.
 
 - Go in `/cmd` and `/internal`; TypeScript + Svelte 5 in `/frontend`; the
   extension (WXT + Svelte 5) in `/extension`.
-- Conventions follow `~/code/danielfrg/golinks`; check it first when unsure how
-  something is done (build, embed, MCP transport, Dockerfile, CI).
 
 ## Vocabulary
 
@@ -42,8 +40,3 @@ user facing, avoid big restructures.
 - Agents get reader text (paged markdown), never raw archive HTML.
 - Server-side fetches must block non-public addresses.
 - Archive files live on disk (gzipped) in the data directory, not in the database.
-
-## Deployment
-
-Daniel (danielfrg/danrodriguez) deploys this in his homelab; the deployment
-source is in `~/code/danielfrg/homelab`.
