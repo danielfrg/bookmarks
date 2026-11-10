@@ -59,11 +59,7 @@ func TestSearchBookmarksTool(t *testing.T) {
 func TestSearchBookmarksValidation(t *testing.T) {
 	e := newEnv(t)
 	s := e.session(t)
-	_, res := call(t, s, "search_bookmarks", map[string]any{"query": "x", "scope": "nope"})
-	if res == nil || !res.IsError || !strings.Contains(errText(res), "scope") {
-		t.Fatalf("%v", res)
-	}
-	_, res = call(t, s, "search_bookmarks", map[string]any{"query": "x", "limit": 51})
+	_, res := call(t, s, "search_bookmarks", map[string]any{"query": "x", "limit": 51})
 	if !res.IsError || !strings.Contains(errText(res), "limit") {
 		t.Fatalf("%v", errText(res))
 	}

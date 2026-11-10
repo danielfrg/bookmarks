@@ -107,11 +107,10 @@ test("list builds query string", async () => {
   await withFetch(
     () => json({ count: 0, results: [] }),
     async (calls) => {
-      await api.list({ q: "", scope: "active", sort: "", offset: 0 });
-      assert.equal(calls[0].url, "/api/bookmarks?scope=active");
+      await api.list({ q: "", sort: "", offset: 0 });
+      assert.equal(calls[0].url, "/api/bookmarks");
       await api.list({
         q: "a b #go",
-        scope: "active",
         unread: "yes",
         sort: "title_asc",
         savedSearch: 4,
@@ -199,7 +198,7 @@ test("routes and verbs match the server", async () => {
       await api.saveSavedSearch({ id: 3, name: "b" });
       await api.reorderSavedSearches([3, 1]);
       await api.putSettings({} as never);
-      await api.bulk({ ids: [1], action: "archive" });
+      await api.bulk({ ids: [1], action: "read" });
       await api.extract(2);
       await api.deleteArchive(8);
       await api.deleteTag(7);

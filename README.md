@@ -5,7 +5,7 @@ A self-hosted, single-user bookmark manager inspired by
 
 > Work in progress.
 
-- Save bookmarks with tags, notes, and unread/archived state.
+- Save bookmarks with tags, notes, and unread state.
 - One Chrome extension saves the bookmark **and** a full-page archive
   (SingleFile-style) of the page as you see it.
 - Every archive gets a stored reader-text version, indexed for full-text search.
@@ -114,8 +114,8 @@ valid one.
 ## Migrating from linkding
 
 `cmd/import-linkding` copies everything from a linkding instance through both
-REST APIs: bookmarks (active and archived, with their dates, tags, notes and
-read state), complete snapshots and uploaded files as archives (keeping their
+REST APIs: all bookmarks (including ones archived in linkding, which become
+ordinary bookmarks here, with their dates, tags, notes and read state), complete snapshots and uploaded files as archives (keeping their
 creation dates) and bundles as saved searches. `BOOKMARKS_TOKEN` is an API
 token created in Settings → API. Do a dry run first:
 

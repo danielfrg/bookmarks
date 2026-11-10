@@ -116,7 +116,7 @@ type importer struct {
 	seen int // bookmarks handled, for --limit
 }
 
-// Run copies bookmarks (active and archived), their complete assets and the
+// Run copies all bookmarks (including ones archived in linkding), their complete assets and the
 // bundles from linkding into Bookmarks. Per-item problems are counted in
 // Summary.Failures and logged; an error is returned only for setup failures
 // (bad URLs, rejected tokens, unreachable servers).
@@ -178,7 +178,9 @@ func Run(ctx context.Context, cfg Config, httpc *http.Client, log io.Writer) (Su
 // LimitOffsetPagination has no max_limit, so most instances fit in one page.
 const listPageSize = 1000
 
-// bookmarkList imports one linkding bookmark list (active or archived).
+// bookmarkList imports one linkding bookmark list. Both the main list and
+// linkding's archived list are imported; Bookmarks has no archived state, so
+// they all become ordinary bookmarks.
 //
 // linkding orders only by "-date_added", so rows with equal dates can repeat
 // or be skipped across offset pages, the same way on every run. Repeats are
@@ -262,7 +264,7 @@ func (im *importer) bookmark(ctx context.Context, b lkBookmark) {
 	}
 	body := map[string]any{
 		"url": b.URL, "title": b.Title, "description": b.Description, "notes": b.Notes, "tags": tags,
-		"unread": b.Unread, "is_archived": b.IsArchived, "date_added": added, "date_modified": modified,
+		"unread": b.Unread, "date_added": added, "date_modified": modified,
 	}
 	var saved tBookmark
 	status, err := im.bm.doJSON(ctx, http.MethodPost, "/api/bookmarks?capture=none", body, &saved, http.StatusCreated, http.StatusOK)

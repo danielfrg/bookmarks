@@ -48,9 +48,8 @@
   }
 
   const filters = [
-    { value: "active", label: "Active" },
+    { value: "all", label: "All" },
     { value: "unread", label: "Unread" },
-    { value: "archived", label: "Archived" },
   ];
   const sorts = [
     { value: "added_desc", label: "Newest" },
@@ -73,7 +72,7 @@
         class="wordmark"
         type="button"
         onclick={() =>
-          navigate({ pageName: "list", read: null, q: "", filter: "active", saved: null, page: 1 })}
+          navigate({ pageName: "list", read: null, q: "", filter: "all", saved: null, page: 1 })}
       >
         Bookmarks
       </button>

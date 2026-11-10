@@ -89,7 +89,7 @@ export function commitTagText(current: string[], text: string): string[] {
 
 /**
  * Builds the bulk API request for a selection. "All matching" uses the current
- * search (q + scope + unread). Returns null when that would be unsafe: a
+ * search (q + unread). Returns null when that would be unsafe: a
  * match-all delete (the server rejects it) or any all-matching inside a saved search
  * (the bulk API has no saved search parameter).
  */
@@ -105,7 +105,6 @@ export function bulkRequest(
     if (action === "delete" && !v.q.trim() && v.filter !== "unread") return null;
     req.query = {
       q: v.q,
-      scope: v.filter === "archived" ? "archived" : "active",
       ...(v.filter === "unread" ? { unread: "yes" } : {}),
     };
   }

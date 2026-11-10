@@ -8,7 +8,7 @@ import (
 	"github.com/danielfrg/bookmarks/internal/bookmarks"
 )
 
-const bookmarkColumns = `b.id,b.url,b.title,b.description,b.notes,b.unread,b.is_archived,
+const bookmarkColumns = `b.id,b.url,b.title,b.description,b.notes,b.unread,
  b.favicon_file,b.preview_file,b.web_archive_url,b.date_added,b.date_modified,
  (SELECT COUNT(*) FROM archives a WHERE a.bookmark_id=b.id),
  (SELECT COUNT(*) FROM archives a WHERE a.bookmark_id=b.id AND a.source<>'server'),
@@ -18,9 +18,9 @@ const selectBookmark = `SELECT ` + bookmarkColumns + ` FROM bookmarks b`
 
 func scanBookmark(row scanner) (bookmarks.Bookmark, error) {
 	var b bookmarks.Bookmark
-	var unread, archived, nonServer int
+	var unread, nonServer int
 	var added, modified, reader string
-	err := row.Scan(&b.ID, &b.URL, &b.Title, &b.Description, &b.Notes, &unread, &archived,
+	err := row.Scan(&b.ID, &b.URL, &b.Title, &b.Description, &b.Notes, &unread,
 		&b.FaviconFile, &b.PreviewFile, &b.WebArchiveURL, &added, &modified,
 		&b.ArchiveCount, &nonServer, &reader)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -29,7 +29,7 @@ func scanBookmark(row scanner) (bookmarks.Bookmark, error) {
 	if err != nil {
 		return b, err
 	}
-	b.Unread, b.Archived = unread != 0, archived != 0
+	b.Unread = unread != 0
 	b.BasicCaptureOnly = b.ArchiveCount > 0 && nonServer == 0
 	b.ReaderStatus = bookmarks.ReaderStatus(reader)
 	if b.DateAdded, err = parseTime(added); err != nil {
@@ -69,9 +69,9 @@ func (s *SQLite) CreateBookmark(ctx context.Context, b *bookmarks.Bookmark) erro
 		return err
 	}
 	defer tx.Rollback()
-	res, err := tx.ExecContext(ctx, `INSERT INTO bookmarks(url,url_normalized,title,description,notes,unread,is_archived,favicon_file,preview_file,web_archive_url,date_added,date_modified)
- VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`, b.URL, bookmarks.NormalizeURL(b.URL), b.Title, b.Description, b.Notes,
-		boolInt(b.Unread), boolInt(b.Archived), b.FaviconFile, b.PreviewFile, b.WebArchiveURL,
+	res, err := tx.ExecContext(ctx, `INSERT INTO bookmarks(url,url_normalized,title,description,notes,unread,favicon_file,preview_file,web_archive_url,date_added,date_modified)
+ VALUES(?,?,?,?,?,?,?,?,?,?,?)`, b.URL, bookmarks.NormalizeURL(b.URL), b.Title, b.Description, b.Notes,
+		boolInt(b.Unread), b.FaviconFile, b.PreviewFile, b.WebArchiveURL,
 		formatTime(b.DateAdded), formatTime(b.DateModified))
 	if isUnique(err) {
 		return ErrConflict
@@ -106,9 +106,9 @@ func (s *SQLite) UpdateBookmark(ctx context.Context, b bookmarks.Bookmark) error
 		return err
 	}
 	defer tx.Rollback()
-	res, err := tx.ExecContext(ctx, `UPDATE bookmarks SET url=?,url_normalized=?,title=?,description=?,notes=?,unread=?,is_archived=?,
+	res, err := tx.ExecContext(ctx, `UPDATE bookmarks SET url=?,url_normalized=?,title=?,description=?,notes=?,unread=?,
  favicon_file=?,preview_file=?,web_archive_url=?,date_added=?,date_modified=? WHERE id=?`,
-		b.URL, bookmarks.NormalizeURL(b.URL), b.Title, b.Description, b.Notes, boolInt(b.Unread), boolInt(b.Archived),
+		b.URL, bookmarks.NormalizeURL(b.URL), b.Title, b.Description, b.Notes, boolInt(b.Unread),
 		b.FaviconFile, b.PreviewFile, b.WebArchiveURL, formatTime(b.DateAdded), formatTime(b.DateModified), b.ID)
 	if isUnique(err) {
 		return ErrConflict

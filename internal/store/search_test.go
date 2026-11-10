@@ -156,7 +156,7 @@ func TestSearchTagsKeywordsBooleans(t *testing.T) {
 		{"(#a or #b) four", []int64{b4}},
 	}
 	for _, c := range cases {
-		r := search(t, s, SearchQuery{Expr: parse(t, c.q), Scope: "all"})
+		r := search(t, s, SearchQuery{Expr: parse(t, c.q)})
 		sameSet(t, ids(r), c.want...)
 		if r.Total != len(c.want) {
 			t.Errorf("%q total %d", c.q, r.Total)
@@ -164,7 +164,7 @@ func TestSearchTagsKeywordsBooleans(t *testing.T) {
 	}
 }
 
-func TestSearchScopeUnreadSortPaging(t *testing.T) {
+func TestSearchUnreadSortPaging(t *testing.T) {
 	s := openTest(t)
 	ctx := context.Background()
 	a := addBM(t, s, 1, "https://a.test", "Charlie")
@@ -173,20 +173,17 @@ func TestSearchScopeUnreadSortPaging(t *testing.T) {
 	d := addBM(t, s, 4, "https://d.test", "delta")
 	for _, id := range []int64{b, d} {
 		bk, _ := s.GetBookmark(ctx, id)
-		bk.Archived = true
 		bk.Unread = id == d
 		bk.DateModified = searchBase.Add(time.Duration(-int(id)) * time.Hour)
 		s.UpdateBookmark(ctx, bk)
 	}
-	sameSet(t, ids(search(t, s, SearchQuery{})), a, c)
-	sameSet(t, ids(search(t, s, SearchQuery{Scope: "active"})), a, c)
-	sameSet(t, ids(search(t, s, SearchQuery{Scope: "archived"})), b, d)
-	sameSet(t, ids(search(t, s, SearchQuery{Scope: "all"})), a, b, c, d)
-	sameSet(t, ids(search(t, s, SearchQuery{Scope: "all", Unread: "no"})), a, b, c)
-	sameSet(t, ids(search(t, s, SearchQuery{Scope: "all", Unread: "yes"})), d)
+	// Every search covers all bookmarks; there is no scope.
+	sameSet(t, ids(search(t, s, SearchQuery{})), a, b, c, d)
+	sameSet(t, ids(search(t, s, SearchQuery{Unread: "no"})), a, b, c)
+	sameSet(t, ids(search(t, s, SearchQuery{Unread: "yes"})), d)
 
 	order := func(sort string) []int64 {
-		return ids(search(t, s, SearchQuery{Scope: "all", Sort: sort}))
+		return ids(search(t, s, SearchQuery{Sort: sort}))
 	}
 	for sort, want := range map[string][]int64{
 		"":              {d, c, b, a},
@@ -202,15 +199,15 @@ func TestSearchScopeUnreadSortPaging(t *testing.T) {
 			t.Errorf("sort %q: got %v want %v", sort, got, want)
 		}
 	}
-	r := search(t, s, SearchQuery{Scope: "all", Sort: "added_asc", Limit: 2, Offset: 1})
+	r := search(t, s, SearchQuery{Sort: "added_asc", Limit: 2, Offset: 1})
 	if r.Total != 4 || !reflect.DeepEqual(ids(r), []int64{b, c}) {
 		t.Fatalf("paging %+v", ids(r))
 	}
-	r = search(t, s, SearchQuery{Scope: "all", Sort: "added_asc", Limit: 2, Offset: -5})
+	r = search(t, s, SearchQuery{Sort: "added_asc", Limit: 2, Offset: -5})
 	if !reflect.DeepEqual(ids(r), []int64{a, b}) {
 		t.Fatalf("neg offset %+v", ids(r))
 	}
-	r = search(t, s, SearchQuery{Scope: "all", Limit: 100000})
+	r = search(t, s, SearchQuery{Limit: 100000})
 	if len(r.Hits) != 4 {
 		t.Fatal("clamp")
 	}
@@ -249,7 +246,7 @@ func TestSearchHostileInput(t *testing.T) {
 			}
 			continue
 		}
-		if _, err := s.Search(context.Background(), SearchQuery{Expr: e, Scope: "all", Snippets: true, Sort: "relevance"}); err != nil {
+		if _, err := s.Search(context.Background(), SearchQuery{Expr: e, Snippets: true, Sort: "relevance"}); err != nil {
 			t.Errorf("%q: %v", in, err)
 		}
 	}

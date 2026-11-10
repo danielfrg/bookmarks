@@ -29,16 +29,17 @@ Linkding's structure:
 
 - **Main page:** no left sidebar. Top bar: wordmark, search (accepts the query
   syntax: `#tag`, `!unread`, `!untagged`, `!basic`, `!noarchive`, `and/or/not`, quotes),
-  Active / Unread / Archived filter pills, Add. A dense bookmark list; a right
+  All / Unread filter pills (All is the default), Add. A dense bookmark list; a right
   panel with Saved searches, then an A–Z grouped tag cloud.
 - **List row:** favicon, title (unread dot; clicking opens the live page), one-line
-  description, tags, relative date, `archived` / `basic capture` badge, actions
-  View, Edit, Archive, Delete.
+  description, tags, relative date, `archived` / `basic capture` badge (the
+  bookmark has a saved page file), actions View, Edit, Mark read (when unread),
+  Delete. Unlike linkding there is no archived-bookmark state: "archive" always
+  means a saved page file.
 - **Details modal (View):** title + URL, tags, description, an **Archive** section
   (saved snapshots: source, date, size, Open, Download; capture again, upload,
   Wayback link), a separate **Reader text** section (word count, Read,
-  Re-extract), notes (markdown), unread toggle, dates; footer Edit / Archive /
-  Delete.
+  Re-extract), notes (markdown), unread toggle, dates; footer Edit / Delete.
 - **Extension popup:** "already saved" banner (or "only a basic capture exists"),
   URL, title, tags with autocomplete, description, notes, "Archive this page" and
   "Mark unread" checkboxes, Save with capture progress.

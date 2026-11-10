@@ -23,7 +23,6 @@ const (
 
 type SearchInput struct {
 	Query  string `json:"query" jsonschema:"search text; supports #tag, !unread, !untagged, quoted phrases and and/or/not"`
-	Scope  string `json:"scope,omitempty" jsonschema:"all (default), active or archived"`
 	Limit  int    `json:"limit,omitempty" jsonschema:"results per page, default 10, max 50"`
 	Offset int    `json:"offset,omitempty" jsonschema:"results to skip; pass next_offset from the previous page"`
 }
@@ -144,11 +143,7 @@ func NewHandler(svc *service.Service, allowedHosts []string) http.Handler {
 		if in.Offset < 0 {
 			return nil, out, errors.New("offset: must not be negative")
 		}
-		scope := in.Scope
-		if scope == "" {
-			scope = "all"
-		}
-		res, err := svc.Search(ctx, service.SearchInput{Q: in.Query, Scope: scope, Sort: "relevance", Limit: limit, Offset: in.Offset, Snippets: true})
+		res, err := svc.Search(ctx, service.SearchInput{Q: in.Query, Sort: "relevance", Limit: limit, Offset: in.Offset, Snippets: true})
 		if err != nil {
 			return nil, out, safeError(err)
 		}

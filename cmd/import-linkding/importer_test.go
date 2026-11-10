@@ -267,7 +267,6 @@ type gotBookmark struct {
 	Notes        string    `json:"notes"`
 	Tags         []string  `json:"tags"`
 	Unread       bool      `json:"unread"`
-	IsArchived   bool      `json:"is_archived"`
 	DateAdded    time.Time `json:"date_added"`
 	DateModified time.Time `json:"date_modified"`
 	ArchiveCount int       `json:"archive_count"`
@@ -295,7 +294,7 @@ func (tg *fakeTarget) bookmarks(t *testing.T) []gotBookmark {
 	var res struct {
 		Results []gotBookmark `json:"results"`
 	}
-	tg.get(t, "/api/bookmarks?scope=all&limit=1000", &res)
+	tg.get(t, "/api/bookmarks?limit=1000", &res)
 	sort.Slice(res.Results, func(i, j int) bool { return res.Results[i].URL < res.Results[j].URL })
 	return res.Results
 }
@@ -353,8 +352,9 @@ func TestWalksPagesAndArchivedList(t *testing.T) {
 	if len(got) != 6 {
 		t.Fatalf("got %d bookmarks", len(got))
 	}
-	if !tg.byURL(t, "https://example.com/archived").IsArchived || tg.byURL(t, "https://example.com/1").IsArchived {
-		t.Fatal("archived flag not preserved")
+	// linkding's archived bookmarks become ordinary bookmarks.
+	if b := tg.byURL(t, "https://example.com/archived"); b.ID == 0 {
+		t.Fatal("bookmark from linkding's archived list not imported")
 	}
 	if strings.Count(out, "+ ") != 6 {
 		t.Fatalf("output:\n%s", out)

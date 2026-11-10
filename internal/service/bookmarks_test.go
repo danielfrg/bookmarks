@@ -111,7 +111,7 @@ func TestSaveBookmarkMergesNormalizedURL(t *testing.T) {
 	if second.URL != first.URL {
 		t.Fatalf("url changed to %q", second.URL)
 	}
-	res, err := e.svc.Search(ctx, SearchInput{Scope: "all"})
+	res, err := e.svc.Search(ctx, SearchInput{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,12 +168,12 @@ func TestSaveKeepsImportedDates(t *testing.T) {
 	ctx := context.Background()
 	added := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
 	modified := time.Date(2021, 6, 7, 8, 9, 10, 0, time.UTC)
-	b, _, err := e.svc.Save(ctx, SaveInput{URL: "https://example.com", DateAdded: &added, DateModified: &modified, Archived: ptr(true)})
+	b, _, err := e.svc.Save(ctx, SaveInput{URL: "https://example.com", DateAdded: &added, DateModified: &modified})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !b.DateAdded.Equal(added) || !b.DateModified.Equal(modified) || !b.Archived {
-		t.Fatalf("got added=%v modified=%v archived=%v", b.DateAdded, b.DateModified, b.Archived)
+	if !b.DateAdded.Equal(added) || !b.DateModified.Equal(modified) {
+		t.Fatalf("got added=%v modified=%v", b.DateAdded, b.DateModified)
 	}
 	b2, _, err := e.svc.Save(ctx, SaveInput{URL: "https://example.org"})
 	if err != nil {
@@ -259,7 +259,6 @@ func TestSearchValidation(t *testing.T) {
 		{Q: "(unclosed"},
 		{Q: strings.Repeat("(", 1025)},
 		{Sort: "bogus"},
-		{Scope: "bogus"},
 		{Unread: "maybe"},
 	} {
 		_, err := e.svc.Search(ctx, in)

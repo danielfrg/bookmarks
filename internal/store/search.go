@@ -13,7 +13,6 @@ import (
 // SearchQuery describes a bookmark search.
 type SearchQuery struct {
 	Expr          query.Expr
-	Scope         string // "active" (default), "archived", "all"
 	Unread        string // "", "yes", "no"
 	Sort          string // added_desc (default), added_asc, modified_desc, modified_asc, title_asc, title_desc, relevance
 	Limit, Offset int    // Limit 0 -> 50, max 500
@@ -146,13 +145,6 @@ func (s *SQLite) Search(ctx context.Context, q SearchQuery) (SearchResult, error
 
 	var c compiler
 	where := []string{c.compile(q.Expr)}
-	switch q.Scope {
-	case "archived":
-		where = append(where, "b.is_archived=1")
-	case "all":
-	default:
-		where = append(where, "b.is_archived=0")
-	}
 	switch q.Unread {
 	case "yes":
 		where = append(where, "b.unread=1")

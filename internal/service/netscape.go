@@ -17,12 +17,13 @@ import (
 )
 
 // Netscape bookmark files use linkding's conventions: notes live inside the
-// <DD> description between these markers, and archived bookmarks carry a
-// pseudo-tag.
+// <DD> description between these markers. linkding also marks its archived
+// bookmarks with a pseudo-tag; this app has no such state, so an import drops
+// that tag (it never becomes a real tag) and an export never writes it.
 const (
-	notesOpen   = "[linkding-notes]"
-	notesClose  = "[/linkding-notes]"
-	archivedTag = "linkding:bookmarks.archived"
+	notesOpen           = "[linkding-notes]"
+	notesClose          = "[/linkding-notes]"
+	linkdingArchivedTag = "linkding:bookmarks.archived"
 )
 
 // ImportResult counts what an import did.
@@ -37,7 +38,7 @@ type netscapeEntry struct {
 	href, title, description, notes string
 	added, modified                 *time.Time
 	tags                            []string
-	unread, archived                bool
+	unread                          bool
 }
 
 // parseNetscape tokenizes a Netscape bookmark file leniently (real exports are
@@ -131,8 +132,8 @@ func (e *netscapeEntry) setAttr(key, val string) {
 			t = strings.TrimSpace(t)
 			switch {
 			case t == "":
-			case strings.EqualFold(t, archivedTag):
-				e.archived = true
+			case strings.EqualFold(t, linkdingArchivedTag):
+				// Dropped: not a tag, and there is no archived state.
 			default:
 				e.tags = append(e.tags, t)
 			}
@@ -182,7 +183,7 @@ func (s *Service) ImportNetscape(ctx context.Context, r io.Reader) (ImportResult
 		}
 		in := SaveInput{
 			URL: e.href, Description: &e.description, Tags: &e.tags,
-			Unread: &e.unread, Archived: &e.archived,
+			Unread:    &e.unread,
 			DateAdded: e.added, DateModified: e.modified, Capture: CaptureNone,
 		}
 		if e.title != "" {
@@ -203,9 +204,6 @@ func (s *Service) ImportNetscape(ctx context.Context, r io.Reader) (ImportResult
 				in.DateAdded, in.DateModified = nil, nil
 				if e.description == "" {
 					in.Description = nil
-				}
-				if !e.archived {
-					in.Archived = nil
 				}
 				if !e.unread {
 					in.Unread = nil
@@ -233,14 +231,14 @@ func (s *Service) ImportNetscape(ctx context.Context, r io.Reader) (ImportResult
 
 const exportPageSize = 500
 
-// ExportNetscape writes every bookmark (archived ones too) as a Netscape
+// ExportNetscape writes every bookmark as a Netscape
 // bookmark file in linkding's format, oldest first.
 //
 // Every bookmark is loaded before the first byte is written, so a search
 // failure surfaces as an error instead of a truncated file.
 func (s *Service) ExportNetscape(ctx context.Context, w io.Writer) error {
 	var all []bookmarks.Bookmark
-	q := SearchInput{Scope: "all", Sort: "added_asc", Limit: exportPageSize}
+	q := SearchInput{Sort: "added_asc", Limit: exportPageSize}
 	for {
 		res, err := s.Search(ctx, q)
 		if err != nil {
@@ -280,9 +278,6 @@ func writeNetscapeBookmark(w *bufio.Writer, b bookmarks.Bookmark) {
 		desc += notesOpen + stdhtml.EscapeString(b.Notes) + notesClose
 	}
 	tags := append([]string(nil), b.Tags...)
-	if b.Archived {
-		tags = append(tags, archivedTag)
-	}
 	for i, t := range tags {
 		tags[i] = stdhtml.EscapeString(t)
 	}

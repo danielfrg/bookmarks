@@ -13,7 +13,7 @@ import (
 func sample(url string, tags ...string) *bookmarks.Bookmark {
 	return &bookmarks.Bookmark{
 		URL: url, Title: "T", Description: "D", Notes: "N", Tags: tags,
-		Unread: true, Archived: true, FaviconFile: "f.png", PreviewFile: "p.png", WebArchiveURL: "https://web.archive.org/x",
+		Unread: true, FaviconFile: "f.png", PreviewFile: "p.png", WebArchiveURL: "https://web.archive.org/x",
 		DateAdded:    time.Date(2026, 1, 2, 3, 4, 5, 6, time.UTC),
 		DateModified: time.Date(2026, 2, 3, 4, 5, 6, 7, time.UTC),
 	}

@@ -145,12 +145,12 @@ func TestBulkByQuery(t *testing.T) {
 	mk("https://b.example", "keep")
 	mk("https://c.example", "other")
 
-	w := e.do("POST", "/api/bookmarks/bulk", map[string]any{"query": map[string]any{"q": "#keep"}, "action": "archive"})
+	w := e.do("POST", "/api/bookmarks/bulk", map[string]any{"query": map[string]any{"q": "#keep"}, "action": "unread"})
 	if w.Code != 200 || decode[struct{ Affected int }](t, w).Affected != 2 {
 		t.Fatal(w.Code, w.Body.String())
 	}
-	if got := decode[struct{ Count int }](t, e.do("GET", "/api/bookmarks?scope=archived", nil)); got.Count != 2 {
-		t.Fatalf("archived = %d", got.Count)
+	if got := decode[struct{ Count int }](t, e.do("GET", "/api/bookmarks?unread=yes", nil)); got.Count != 2 {
+		t.Fatalf("unread = %d", got.Count)
 	}
 	w = e.do("POST", "/api/bookmarks/bulk", map[string]any{"ids": []int64{a.ID, 9999}, "action": "tag", "tags": []string{"Picked"}})
 	if got := decode[struct {
@@ -158,13 +158,16 @@ func TestBulkByQuery(t *testing.T) {
 	}](t, w); w.Code != 200 || got.Affected != 1 {
 		t.Fatal(w.Code, w.Body.String())
 	}
-	if w := e.do("POST", "/api/bookmarks/bulk", map[string]any{"ids": []int64{a.ID}, "action": "explode"}); w.Code != 422 {
+	// archive/unarchive were removed and are rejected like any unknown action.
+	for _, action := range []string{"explode", "archive", "unarchive"} {
+		if w := e.do("POST", "/api/bookmarks/bulk", map[string]any{"ids": []int64{a.ID}, "action": action}); w.Code != 422 {
+			t.Fatal(action, w.Code, w.Body.String())
+		}
+	}
+	if w := e.do("POST", "/api/bookmarks/bulk", map[string]any{"action": "read"}); w.Code != 422 {
 		t.Fatal(w.Code, w.Body.String())
 	}
-	if w := e.do("POST", "/api/bookmarks/bulk", map[string]any{"action": "archive"}); w.Code != 422 {
-		t.Fatal(w.Code, w.Body.String())
-	}
-	if w := e.do("POST", "/api/bookmarks/bulk", map[string]any{"query": map[string]any{"scope": "bogus"}, "action": "archive"}); w.Code != 422 {
+	if w := e.do("POST", "/api/bookmarks/bulk", map[string]any{"query": map[string]any{"q": "(x"}, "action": "read"}); w.Code != 422 {
 		t.Fatal(w.Code, w.Body.String())
 	}
 }
@@ -197,7 +200,7 @@ func TestNetscapeImportExportEndpoints(t *testing.T) {
 		t.Fatal(w.Code, w.Header())
 	}
 	body := w.Body.String()
-	for _, want := range []string{"<!DOCTYPE NETSCAPE-Bookmark-file-1>", `HREF="https://a.example/"`, "A &amp; B", "x,linkding:bookmarks.archived", `TOREAD="1"`, "[linkding-notes]n[/linkding-notes]"} {
+	for _, want := range []string{"<!DOCTYPE NETSCAPE-Bookmark-file-1>", `HREF="https://a.example/"`, "A &amp; B", `TAGS="x"`, `TOREAD="1"`, "[linkding-notes]n[/linkding-notes]"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("export lacks %q:\n%s", want, body)
 		}

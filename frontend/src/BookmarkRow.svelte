@@ -14,7 +14,6 @@
     ontag: (tag: string) => void;
     onview: () => void;
     onedit: () => void;
-    onarchive: () => void;
     onmarkread: () => void;
     ondelete: (trigger: HTMLElement) => void;
   }
@@ -29,7 +28,6 @@
     ontag,
     onview,
     onedit,
-    onarchive,
     onmarkread,
     ondelete,
   }: Props = $props();
@@ -105,15 +103,6 @@
             onclick={onmarkread}>Mark read</button
           >
         {/if}
-        <button
-          type="button"
-          class="act"
-          disabled={busy}
-          aria-label="{b.is_archived ? 'Unarchive' : 'Archive'} {displayTitle(b)}"
-          onclick={onarchive}
-        >
-          {b.is_archived ? "Unarchive" : "Archive"}
-        </button>
         <button
           type="button"
           class="act danger"

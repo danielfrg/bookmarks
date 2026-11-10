@@ -20,7 +20,6 @@ type bookmarkJSON struct {
 	Notes            string    `json:"notes"`
 	Tags             []string  `json:"tags"`
 	Unread           bool      `json:"unread"`
-	IsArchived       bool      `json:"is_archived"`
 	FaviconURL       string    `json:"favicon_url"`
 	PreviewImageURL  string    `json:"preview_image_url"`
 	WebArchiveURL    string    `json:"web_archive_url"`
@@ -39,7 +38,7 @@ type searchHitJSON struct {
 func toBookmark(b bookmarks.Bookmark) bookmarkJSON {
 	j := bookmarkJSON{
 		ID: b.ID, URL: b.URL, Title: b.Title, Description: b.Description, Notes: b.Notes,
-		Tags: b.Tags, Unread: b.Unread, IsArchived: b.Archived, WebArchiveURL: b.WebArchiveURL,
+		Tags: b.Tags, Unread: b.Unread, WebArchiveURL: b.WebArchiveURL,
 		DateAdded: b.DateAdded.UTC(), DateModified: b.DateModified.UTC(),
 		ArchiveCount: b.ArchiveCount, BasicCaptureOnly: b.BasicCaptureOnly, ReaderStatus: string(b.ReaderStatus),
 	}
@@ -69,7 +68,6 @@ type idInput struct {
 
 type listInput struct {
 	Q           string `query:"q"`
-	Scope       string `query:"scope" doc:"active (default), archived or all"`
 	Unread      string `query:"unread" doc:"yes or no"`
 	Sort        string `query:"sort"`
 	SavedSearch int64  `query:"saved_search" minimum:"0"`
@@ -92,7 +90,6 @@ type createBody struct {
 	Notes        *string    `json:"notes,omitempty"`
 	Tags         *[]string  `json:"tags,omitempty"`
 	Unread       *bool      `json:"unread,omitempty"`
-	IsArchived   *bool      `json:"is_archived,omitempty"`
 	DateAdded    *time.Time `json:"date_added,omitempty"`
 	DateModified *time.Time `json:"date_modified,omitempty"`
 }
@@ -105,7 +102,6 @@ type patchBody struct {
 	Notes        *string    `json:"notes,omitempty"`
 	Tags         *[]string  `json:"tags,omitempty"`
 	Unread       *bool      `json:"unread,omitempty"`
-	IsArchived   *bool      `json:"is_archived,omitempty"`
 	DateAdded    *time.Time `json:"date_added,omitempty"`
 	DateModified *time.Time `json:"date_modified,omitempty"`
 }
@@ -162,7 +158,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 	huma.Register(api, huma.Operation{OperationID: "list-bookmarks", Method: http.MethodGet, Path: "/api/bookmarks", Summary: "Search bookmarks"},
 		func(ctx context.Context, in *listInput) (*listOutput, error) {
 			res, err := svc.Search(ctx, service.SearchInput{
-				Q: in.Q, Scope: in.Scope, Unread: in.Unread, Sort: in.Sort, SavedSearchID: in.SavedSearch,
+				Q: in.Q, Unread: in.Unread, Sort: in.Sort, SavedSearchID: in.SavedSearch,
 				Limit: in.Limit, Offset: in.Offset, Snippets: in.Q != "",
 			})
 			if err != nil {
@@ -182,7 +178,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 		func(ctx context.Context, in *createInput) (*bookmarkOutput, error) {
 			b, created, err := svc.Save(ctx, service.SaveInput{
 				URL: in.Body.URL, Title: in.Body.Title, Description: in.Body.Description, Notes: in.Body.Notes,
-				Tags: in.Body.Tags, Unread: in.Body.Unread, Archived: in.Body.IsArchived,
+				Tags: in.Body.Tags, Unread: in.Body.Unread,
 				DateAdded: in.Body.DateAdded, DateModified: in.Body.DateModified,
 				Capture: service.CaptureMode(in.Capture),
 			})
@@ -231,7 +227,7 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 		func(ctx context.Context, in *patchInput) (*bookmarkOutput, error) {
 			b, err := svc.Update(ctx, in.ID, service.SaveInput{
 				URL: in.Body.URL, Title: in.Body.Title, Description: in.Body.Description, Notes: in.Body.Notes,
-				Tags: in.Body.Tags, Unread: in.Body.Unread, Archived: in.Body.IsArchived,
+				Tags: in.Body.Tags, Unread: in.Body.Unread,
 				DateAdded: in.Body.DateAdded, DateModified: in.Body.DateModified,
 			})
 			if err != nil {

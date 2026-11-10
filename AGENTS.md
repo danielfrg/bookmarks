@@ -24,7 +24,8 @@ purpose; never commit them).
 ## Vocabulary
 
 - **Archive**: a saved full-page file (single-file HTML, PDF, or upload). Each
-  has a source: `extension`, `server`, `upload`, `import`.
+  has a source: `extension`, `server`, `upload`, `import`. There is no
+  linkding-style "archived bookmark" state; archive always means the file.
 - **Basic capture**: a `server`-source archive (Go fetch, no JavaScript). A
   bookmark with only basic captures shows a badge until the extension adds a full one.
 - **Reader text**: markdown extracted from the latest archive. Separate from

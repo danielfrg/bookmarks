@@ -118,14 +118,6 @@
     });
     if (!ok) unread = !v;
   }
-  async function toggleArchived() {
-    if (!bm) return;
-    const next = !bm.is_archived;
-    await run(async () => {
-      bm = await api.update(id, { is_archived: next });
-      unread = bm.unread;
-    });
-  }
   async function deleteBookmark() {
     const ok = await run(async () => {
       await api.remove(id);
@@ -369,9 +361,6 @@
         </Button>
       {:else}
         <Button onclick={() => leaveTo({ edit: id })}>Edit</Button>
-        <Button disabled={busy} onclick={toggleArchived}>
-          {bm.is_archived ? "Unarchive" : "Archive"}
-        </Button>
         <span class="grow"></span>
         <Button
           tone="danger"

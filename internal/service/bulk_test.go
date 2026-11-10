@@ -11,7 +11,7 @@ import (
 	"github.com/danielfrg/bookmarks/internal/store"
 )
 
-func TestBulkTagAndArchive(t *testing.T) {
+func TestBulkActions(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
 	var ids []int64
@@ -32,13 +32,13 @@ func TestBulkTagAndArchive(t *testing.T) {
 		t.Fatalf("tags = %v", got.Tags)
 	}
 
-	n, err = e.svc.Bulk(ctx, BulkInput{Query: &SearchInput{Q: "#new"}, Action: "archive"})
+	n, err = e.svc.Bulk(ctx, BulkInput{Query: &SearchInput{Q: "#new"}, Action: "unread"})
 	if err != nil || n != 2 {
-		t.Fatalf("archive = %d, %v", n, err)
+		t.Fatalf("unread by query = %d, %v", n, err)
 	}
-	res, _ := e.svc.Search(ctx, SearchInput{})
+	res, _ := e.svc.Search(ctx, SearchInput{Unread: "no"})
 	if res.Total != 1 || res.Hits[0].ID != ids[2] {
-		t.Fatalf("active = %+v", res)
+		t.Fatalf("read = %+v", res)
 	}
 
 	n, err = e.svc.Bulk(ctx, BulkInput{IDs: ids, Action: "untag", Tags: []string{"NEW"}})
@@ -46,7 +46,7 @@ func TestBulkTagAndArchive(t *testing.T) {
 		t.Fatalf("untag = %d, %v", n, err)
 	}
 	got, _ = e.svc.Get(ctx, ids[1])
-	if !reflect.DeepEqual(got.Tags, []string{"keep", "two"}) || !got.Archived {
+	if !reflect.DeepEqual(got.Tags, []string{"keep", "two"}) {
 		t.Fatalf("bookmark = %+v", got)
 	}
 
@@ -56,9 +56,6 @@ func TestBulkTagAndArchive(t *testing.T) {
 	got, _ = e.svc.Get(ctx, ids[2])
 	if !got.Unread {
 		t.Fatal("unread not applied")
-	}
-	if n, err = e.svc.Bulk(ctx, BulkInput{IDs: ids[:1], Action: "unarchive"}); err != nil || n != 1 {
-		t.Fatalf("unarchive = %d, %v", n, err)
 	}
 
 	e.q.reset()
@@ -75,7 +72,7 @@ func TestBulkTagAndArchive(t *testing.T) {
 		t.Fatalf("jobs = %v", got)
 	}
 
-	if n, err = e.svc.Bulk(ctx, BulkInput{Query: &SearchInput{Scope: "all", Unread: "yes"}, Action: "delete"}); err != nil || n != 3 {
+	if n, err = e.svc.Bulk(ctx, BulkInput{Query: &SearchInput{Unread: "yes"}, Action: "delete"}); err != nil || n != 3 {
 		t.Fatalf("delete = %d, %v", n, err)
 	}
 	if _, err := e.svc.Get(ctx, ids[0]); !errors.Is(err, store.ErrNotFound) {
@@ -91,9 +88,9 @@ func TestBulkQueryPagesThroughAll(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	n, err := e.svc.Bulk(ctx, BulkInput{Query: &SearchInput{}, Action: "archive"})
+	n, err := e.svc.Bulk(ctx, BulkInput{Query: &SearchInput{}, Action: "read"})
 	if err != nil || n != 503 {
-		t.Fatalf("archive = %d, %v", n, err)
+		t.Fatalf("read = %d, %v", n, err)
 	}
 }
 
@@ -102,10 +99,12 @@ func TestBulkValidation(t *testing.T) {
 	ctx := context.Background()
 	for _, in := range []BulkInput{
 		{IDs: []int64{1}, Action: "explode"},
+		{IDs: []int64{1}, Action: "archive"},
+		{IDs: []int64{1}, Action: "unarchive"},
 		{IDs: []int64{1}, Action: "tag"},
 		{IDs: []int64{1}, Action: "untag", Tags: []string{" "}},
-		{Action: "archive"},
-		{Query: &SearchInput{Q: "(x"}, Action: "archive"},
+		{Action: "read"},
+		{Query: &SearchInput{Q: "(x"}, Action: "read"},
 	} {
 		var ve *ValidationError
 		if _, err := e.svc.Bulk(ctx, in); !errors.As(err, &ve) {

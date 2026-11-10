@@ -30,7 +30,7 @@ type SaveInput struct {
 	URL                       string
 	Title, Description, Notes *string
 	Tags                      *[]string
-	Unread, Archived          *bool
+	Unread                    *bool
 	DateAdded, DateModified   *time.Time
 	Capture                   CaptureMode
 }
@@ -74,9 +74,6 @@ func apply(b *bookmarks.Bookmark, in SaveInput) {
 	}
 	if in.Unread != nil {
 		b.Unread = *in.Unread
-	}
-	if in.Archived != nil {
-		b.Archived = *in.Archived
 	}
 	if in.DateAdded != nil {
 		b.DateAdded = in.DateAdded.UTC()
@@ -224,10 +221,10 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 
 // SearchInput describes a bookmark search. SavedSearchID 0 means no saved search.
 type SearchInput struct {
-	Q, Scope, Unread, Sort string
-	SavedSearchID          int64
-	Limit, Offset          int
-	Snippets               bool
+	Q, Unread, Sort string
+	SavedSearchID   int64
+	Limit, Offset   int
+	Snippets        bool
 }
 
 var validSorts = map[string]bool{
@@ -249,11 +246,6 @@ func parseQuery(field, q string) (query.Expr, error) {
 
 // Search parses in.Q, combines it with the saved search's filters and runs it.
 func (s *Service) Search(ctx context.Context, in SearchInput) (store.SearchResult, error) {
-	switch in.Scope {
-	case "", "active", "archived", "all":
-	default:
-		return store.SearchResult{}, invalid("scope", `must be "active", "archived" or "all"`)
-	}
 	switch in.Unread {
 	case "", "yes", "no":
 	default:
@@ -278,7 +270,7 @@ func (s *Service) Search(ctx context.Context, in SearchInput) (store.SearchResul
 		expr = query.AndAll(expr, be)
 	}
 	return s.st.Search(ctx, store.SearchQuery{
-		Expr: expr, Scope: in.Scope, Unread: in.Unread, Sort: in.Sort,
+		Expr: expr, Unread: in.Unread, Sort: in.Sort,
 		Limit: in.Limit, Offset: in.Offset, Snippets: in.Snippets,
 	})
 }

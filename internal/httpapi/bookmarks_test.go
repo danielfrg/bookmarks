@@ -87,7 +87,7 @@ func TestListShape(t *testing.T) {
 	if res.Count != 2 || len(res.Results) != 1 || res.Results[0].Snippet == nil {
 		t.Fatalf("%+v body=%s", res, w.Body)
 	}
-	for _, k := range []string{`"favicon_url":""`, `"preview_image_url":""`, `"web_archive_url":""`, `"is_archived":false`, `"date_modified"`, `"notes"`, `"description"`} {
+	for _, k := range []string{`"favicon_url":""`, `"preview_image_url":""`, `"web_archive_url":""`, `"date_modified"`, `"notes"`, `"description"`} {
 		if !strings.Contains(w.Body.String(), k) {
 			t.Errorf("missing %s in %s", k, w.Body)
 		}

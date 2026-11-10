@@ -95,7 +95,7 @@ test("commitTagText splits, lower-cases and dedupes", () => {
 
 const baseView = {
   q: "",
-  filter: "active",
+  filter: "all",
   sort: "added_desc",
   saved: null,
   page: 1,
@@ -107,9 +107,9 @@ const baseView = {
 } as unknown as import("./view.ts").View;
 
 test("bulkRequest sends ids for an explicit selection", () => {
-  assert.deepEqual(bulkRequest({ ids: [3, 1], allMatching: false }, baseView, "archive"), {
+  assert.deepEqual(bulkRequest({ ids: [3, 1], allMatching: false }, baseView, "read"), {
     ids: [3, 1],
-    action: "archive",
+    action: "read",
   });
   assert.deepEqual(bulkRequest({ ids: [2], allMatching: false }, baseView, "tag", ["go"]), {
     ids: [2],
@@ -120,16 +120,12 @@ test("bulkRequest sends ids for an explicit selection", () => {
 
 test("bulkRequest sends the current search for all matching", () => {
   assert.deepEqual(bulkRequest({ ids: [], allMatching: true }, { ...baseView, q: "#go" }, "read"), {
-    query: { q: "#go", scope: "active" },
+    query: { q: "#go" },
     action: "read",
   });
   assert.deepEqual(
-    bulkRequest({ ids: [], allMatching: true }, { ...baseView, filter: "unread" }, "archive"),
-    { query: { q: "", scope: "active", unread: "yes" }, action: "archive" },
-  );
-  assert.deepEqual(
-    bulkRequest({ ids: [], allMatching: true }, { ...baseView, filter: "archived" }, "unarchive"),
-    { query: { q: "", scope: "archived" }, action: "unarchive" },
+    bulkRequest({ ids: [], allMatching: true }, { ...baseView, filter: "unread" }, "read"),
+    { query: { q: "", unread: "yes" }, action: "read" },
   );
 });
 
@@ -137,7 +133,6 @@ test("bulk delete all matching is disabled without a filter", () => {
   const sel = { ids: [], allMatching: true };
   assert.equal(bulkRequest(sel, baseView, "delete"), null);
   assert.equal(bulkRequest(sel, { ...baseView, q: "  " }, "delete"), null);
-  assert.equal(bulkRequest(sel, { ...baseView, filter: "archived" }, "delete"), null);
   assert.notEqual(bulkRequest(sel, { ...baseView, q: "foo" }, "delete"), null);
   assert.notEqual(bulkRequest(sel, { ...baseView, filter: "unread" }, "delete"), null);
   // Explicit ids may always be deleted.

@@ -25,7 +25,7 @@ func TestNetscapeRoundTrip(t *testing.T) {
 	}
 	save(SaveInput{URL: "https://a.example/?q=1&r=2", Title: ptr(`A "quoted" <title> & more`), Description: ptr("desc <b> & stuff"),
 		Notes: ptr("my <notes>\nline 2"), Tags: &[]string{"go", "web"}, Unread: ptr(true), DateAdded: &added, DateModified: &modified})
-	save(SaveInput{URL: "https://b.example/", Title: ptr("B"), Archived: ptr(true), Tags: &[]string{"old"},
+	save(SaveInput{URL: "https://b.example/", Title: ptr("B"), Tags: &[]string{"old"},
 		DateAdded: ptr(added.Add(time.Hour)), DateModified: ptr(added.Add(2 * time.Hour))})
 	save(SaveInput{URL: "https://c.example/", Title: ptr("C"), DateAdded: ptr(added.Add(2 * time.Hour)), DateModified: ptr(added.Add(2 * time.Hour))})
 
@@ -35,6 +35,9 @@ func TestNetscapeRoundTrip(t *testing.T) {
 	}
 	if !strings.HasPrefix(buf.String(), "<!DOCTYPE NETSCAPE-Bookmark-file-1>") {
 		t.Fatalf("bad header: %q", buf.String())
+	}
+	if strings.Contains(buf.String(), "linkding:bookmarks.archived") {
+		t.Fatal("export must not write the linkding archived pseudo-tag")
 	}
 
 	dst := newEnv(t)
@@ -55,7 +58,7 @@ func TestNetscapeRoundTrip(t *testing.T) {
 	}
 
 	list := func(e *env) []bookmarks.Bookmark {
-		r, err := e.svc.Search(ctx, SearchInput{Scope: "all", Sort: "added_asc", Limit: 10})
+		r, err := e.svc.Search(ctx, SearchInput{Sort: "added_asc", Limit: 10})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -72,7 +75,7 @@ func TestNetscapeRoundTrip(t *testing.T) {
 	for i := range want {
 		w, g := want[i], got[i]
 		if w.URL != g.URL || w.Title != g.Title || w.Description != g.Description || w.Notes != g.Notes ||
-			w.Unread != g.Unread || w.Archived != g.Archived || strings.Join(w.Tags, ",") != strings.Join(g.Tags, ",") ||
+			w.Unread != g.Unread || strings.Join(w.Tags, ",") != strings.Join(g.Tags, ",") ||
 			!w.DateAdded.Equal(g.DateAdded) || !w.DateModified.Equal(g.DateModified) {
 			t.Errorf("bookmark %d differs:\nwant %+v\ngot  %+v", i, w, g)
 		}
@@ -113,17 +116,27 @@ func TestImportLinkdingExport(t *testing.T) {
 		t.Fatal(err)
 	}
 	if b.Title != "test title 1" || b.Description != "test description 1" || b.Notes != "some <notes>" ||
-		!b.Unread || !b.Archived || strings.Join(b.Tags, ",") != "tag1,tag2" ||
+		!b.Unread || strings.Join(b.Tags, ",") != "tag1,tag2" ||
 		!b.DateAdded.Equal(time.Unix(1616337559, 0)) || !b.DateModified.Equal(time.Unix(1616337600, 0)) {
 		t.Errorf("bookmark 1 = %+v", b)
 	}
 	b2, _ := e.svc.st.GetBookmarkByURL(context.Background(), "https://example.com/2")
-	if !b2.DateAdded.Equal(time.Unix(1616337559, 0)) || b2.Unread || b2.Archived {
+	if !b2.DateAdded.Equal(time.Unix(1616337559, 0)) || b2.Unread {
 		t.Errorf("bookmark 2 = %+v", b2)
 	}
 	b4, err := e.svc.st.GetBookmarkByURL(context.Background(), "https://example.com/4")
 	if err != nil || b4.Description != "" {
 		t.Errorf("bookmark 4 = %+v, %v", b4, err)
+	}
+	// linkding's archived pseudo-tag is dropped, never turned into a real tag.
+	tags, err := e.svc.Tags(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tg := range tags {
+		if strings.Contains(tg.Name, "linkding") {
+			t.Errorf("pseudo-tag imported as a tag: %+v", tg)
+		}
 	}
 }
 
@@ -131,7 +144,7 @@ func TestImportMergesIntoExisting(t *testing.T) {
 	ctx := context.Background()
 	e := newEnv(t)
 	if _, _, err := e.svc.Save(ctx, SaveInput{URL: "https://m.example/", Title: ptr("T"), Description: ptr("keep me"),
-		Notes: ptr("keep notes"), Tags: &[]string{"mine", "shared"}, Archived: ptr(true), Unread: ptr(true), Capture: CaptureNone}); err != nil {
+		Notes: ptr("keep notes"), Tags: &[]string{"mine", "shared"}, Unread: ptr(true), Capture: CaptureNone}); err != nil {
 		t.Fatal(err)
 	}
 	res, err := e.svc.ImportNetscape(ctx, strings.NewReader(`<DL><DT><A HREF="https://m.example/" TAGS="shared,new" TOREAD="0" ADD_DATE="1000000000" LAST_MODIFIED="1000000000"></A></DL>`))
@@ -143,14 +156,14 @@ func TestImportMergesIntoExisting(t *testing.T) {
 		t.Fatalf("dates changed: added %v modified %v", b.DateAdded, b.DateModified)
 	}
 	if strings.Join(b.Tags, ",") != "mine,new,shared" || b.Description != "keep me" || b.Notes != "keep notes" ||
-		b.Title != "T" || !b.Archived || !b.Unread {
+		b.Title != "T" || !b.Unread {
 		t.Fatalf("merged = %+v", b)
 	}
 }
 
 func TestBulkDeleteEmptyQueryRejected(t *testing.T) {
 	e := newEnv(t)
-	_, err := e.svc.Bulk(context.Background(), BulkInput{Action: "delete", Query: &SearchInput{Scope: "all"}})
+	_, err := e.svc.Bulk(context.Background(), BulkInput{Action: "delete", Query: &SearchInput{}})
 	var ve *ValidationError
 	if !errors.As(err, &ve) {
 		t.Fatalf("err = %v", err)
@@ -162,7 +175,7 @@ func TestBulkDeleteBlankOrEmptyExprRejected(t *testing.T) {
 	ctx := context.Background()
 	b, _, _ := e.svc.Save(ctx, SaveInput{URL: "https://keep.example", Capture: CaptureNone})
 	for _, q := range []string{"   ", "*", "#", "-", "!bogus"} {
-		_, err := e.svc.Bulk(ctx, BulkInput{Action: "delete", Query: &SearchInput{Scope: "all", Q: q}})
+		_, err := e.svc.Bulk(ctx, BulkInput{Action: "delete", Query: &SearchInput{Q: q}})
 		var ve *ValidationError
 		if !errors.As(err, &ve) {
 			t.Errorf("q=%q: err = %v, want ValidationError", q, err)

@@ -32,7 +32,6 @@ type Bookmark struct {
 	Notes       string
 	Tags        []string // sorted, lower-case
 	Unread      bool
-	Archived    bool
 
 	FaviconFile   string
 	PreviewFile   string

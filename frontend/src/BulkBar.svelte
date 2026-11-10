@@ -2,12 +2,10 @@
   import { Button } from "@kenn-io/kit-ui";
   import type { BulkAction } from "./lib/api.ts";
   import { commitTagText } from "./lib/query.ts";
-  import type { Filter } from "./lib/view.ts";
   import TagInput from "./TagInput.svelte";
 
   interface Props {
     count: number;
-    filter: Filter;
     busy: boolean;
     error: string;
     /** False when "all matching" would make a delete match everything. */
@@ -21,7 +19,6 @@
   }
   let {
     count,
-    filter,
     busy,
     error,
     canDelete,
@@ -100,13 +97,6 @@
     </div>
   {:else}
     <div class="bulk-row bulk-actions">
-      <Button
-        size="sm"
-        disabled={busy || count === 0}
-        onclick={() => go(filter === "archived" ? "unarchive" : "archive")}
-      >
-        {filter === "archived" ? "Unarchive" : "Archive"}
-      </Button>
       <Button size="sm" disabled={busy || count === 0} onclick={() => go("read")}>Mark read</Button>
       <Button size="sm" disabled={busy || count === 0} onclick={() => go("unread")}>
         Mark unread

@@ -202,47 +202,16 @@
   const first = $derived((view.page - 1) * pageSize + 1);
   const last = $derived(Math.min(count, (view.page - 1) * pageSize + items.length));
   const hasFilters = $derived(view.q !== "" || view.saved !== null);
-  // Empty active list: is the whole library empty, or only archived? (one cheap request)
-  const maybeEmptyLibrary = $derived(
-    status === "ready" && count === 0 && !hasFilters && view.filter === "active",
+  // "All" with no search and no results: the library itself is empty.
+  const libraryEmpty = $derived(
+    status === "ready" && count === 0 && !hasFilters && view.filter === "all",
   );
-  let libraryEmpty = $state<boolean | null>(null);
-  $effect(() => {
-    void reloadKey;
-    if (!maybeEmptyLibrary) {
-      libraryEmpty = null;
-      return;
-    }
-    const ctrl = new AbortController();
-    api
-      .list({ scope: "all", limit: 1 }, ctrl.signal)
-      .then((res) => {
-        if (!ctrl.signal.aborted) libraryEmpty = res.count === 0;
-      })
-      .catch(() => {
-        if (!ctrl.signal.aborted) libraryEmpty = false;
-      });
-    return () => ctrl.abort();
-  });
 
   async function markRead(b: Bookmark) {
     busyId = b.id;
     actionError = "";
     try {
       await api.update(b.id, { unread: false });
-      onchanged();
-    } catch (e) {
-      actionError = e instanceof Error ? e.message : String(e);
-    } finally {
-      busyId = null;
-    }
-  }
-
-  async function archive(b: Bookmark) {
-    busyId = b.id;
-    actionError = "";
-    try {
-      await api.update(b.id, { is_archived: !b.is_archived });
       onchanged();
     } catch (e) {
       actionError = e instanceof Error ? e.message : String(e);
@@ -289,22 +258,7 @@
     </EmptyState>
   {:else if status === "loading" && items.length === 0}
     <div class="center"><Spinner label="Loading bookmarks" /></div>
-  {:else if maybeEmptyLibrary && libraryEmpty === null}
-    <div class="center"><Spinner label="Loading bookmarks" /></div>
-  {:else if maybeEmptyLibrary && libraryEmpty === false}
-    <EmptyState
-      title="No active bookmarks"
-      description="Everything is archived. Switch to Archived to see it, or add a new link."
-    >
-      <Button
-        tone="info"
-        surface="solid"
-        onclick={() => navigate({ create: { url: "", title: "" } })}
-      >
-        Add bookmark
-      </Button>
-    </EmptyState>
-  {:else if maybeEmptyLibrary}
+  {:else if libraryEmpty}
     <EmptyState title="No bookmarks yet" description="Save your first link to start your library.">
       <Button
         tone="info"
@@ -362,7 +316,6 @@
           {ontag}
           onview={() => navigate({ view: b.id })}
           onedit={() => navigate({ edit: b.id })}
-          onarchive={() => archive(b)}
           onmarkread={() => markRead(b)}
           ondelete={(el) => {
             confirmTrigger = el;
@@ -391,7 +344,6 @@
     {#if selectMode}
       <BulkBar
         count={selectedCount}
-        filter={view.filter}
         busy={bulkBusy}
         error={bulkError}
         canDelete={canDeleteSelection}

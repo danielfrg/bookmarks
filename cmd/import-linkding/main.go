@@ -1,6 +1,6 @@
 // Command import-linkding copies everything from a linkding instance into
-// Bookmarks through both REST APIs: bookmarks (active and archived) with
-// their dates, the complete assets as archives, and bundles as saved
+// Bookmarks through both REST APIs: all bookmarks (including ones archived in
+// linkding, which become ordinary bookmarks here) with their dates, the complete assets as archives, and bundles as saved
 // searches. It is safe to re-run: bookmarks merge by URL, archives already
 // copied are skipped and saved searches are matched by name.
 package main

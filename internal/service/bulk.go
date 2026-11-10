@@ -14,7 +14,7 @@ import (
 )
 
 // BulkInput selects bookmarks by IDs, or by Query when IDs is empty, and an
-// action: archive, unarchive, delete, tag, untag, read, unread,
+// action: delete, tag, untag, read, unread,
 // refresh_metadata, capture or extract. Tags is used by tag and untag.
 type BulkInput struct {
 	IDs    []int64
@@ -45,10 +45,6 @@ func (s *Service) Bulk(ctx context.Context, in BulkInput) (int, error) {
 		return func(ctx context.Context, id int64) error { return s.request(ctx, kind, id) }
 	}
 	switch in.Action {
-	case "archive":
-		apply = edit(func(b *bookmarks.Bookmark) { b.Archived = true })
-	case "unarchive":
-		apply = edit(func(b *bookmarks.Bookmark) { b.Archived = false })
 	case "read":
 		apply = edit(func(b *bookmarks.Bookmark) { b.Unread = false })
 	case "unread":

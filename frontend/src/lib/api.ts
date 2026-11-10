@@ -6,7 +6,6 @@ export interface Bookmark {
   notes: string;
   tags: string[];
   unread: boolean;
-  is_archived: boolean;
   favicon_url: string;
   preview_image_url: string;
   web_archive_url: string;
@@ -80,11 +79,8 @@ export interface SaveInput {
   notes?: string;
   tags?: string[];
   unread?: boolean;
-  is_archived?: boolean;
 }
 export type BulkAction =
-  | "archive"
-  | "unarchive"
   | "delete"
   | "tag"
   | "untag"
@@ -95,7 +91,6 @@ export type BulkAction =
   | "extract";
 export interface ListParams {
   q?: string;
-  scope?: "active" | "archived" | "all";
   unread?: "yes" | "no";
   sort?: string;
   savedSearch?: number;
@@ -104,7 +99,7 @@ export interface ListParams {
 }
 export interface BulkRequest {
   ids?: number[];
-  query?: { q?: string; scope?: string; unread?: string };
+  query?: { q?: string; unread?: string };
   action: BulkAction;
   tags?: string[];
 }
@@ -186,7 +181,6 @@ export const api = {
     requestJSON<BookmarkList>(
       `${base}/bookmarks${qs({
         q: p.q,
-        scope: p.scope,
         unread: p.unread,
         sort: p.sort,
         saved_search: p.savedSearch,

@@ -25,7 +25,6 @@ type lkBookmark struct {
 	Notes        string   `json:"notes"`
 	TagNames     []string `json:"tag_names"`
 	Unread       bool     `json:"unread"`
-	IsArchived   bool     `json:"is_archived"`
 	DateAdded    string   `json:"date_added"`
 	DateModified string   `json:"date_modified"`
 }

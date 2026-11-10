@@ -1,6 +1,6 @@
 import type { ListParams } from "./api.ts";
 
-export type Filter = "active" | "unread" | "archived";
+export type Filter = "all" | "unread";
 export type PageName = "list" | "tags" | "saved" | "settings";
 export interface View {
   q: string;
@@ -17,7 +17,8 @@ export interface View {
 
 const DEFAULT_SORT = "added_desc";
 const SORTS = ["added_desc", "added_asc", "title_asc", "title_desc"];
-const FILTERS: Filter[] = ["active", "unread", "archived"];
+// Anything else, including the retired "active" and "archived", means "all".
+const FILTERS: Filter[] = ["all", "unread"];
 const PAGES: PageName[] = ["tags", "saved", "settings"];
 
 function positiveInt(value: string | null): number | null {
@@ -33,7 +34,7 @@ export function readView(url: URL): View {
   const pageName = p.get("page_name") as PageName;
   return {
     q: p.get("q") ?? "",
-    filter: FILTERS.includes(filter) ? filter : "active",
+    filter: FILTERS.includes(filter) ? filter : "all",
     sort: SORTS.includes(sort) ? sort : DEFAULT_SORT,
     saved: positiveInt(p.get("saved")),
     page: positiveInt(p.get("page")) ?? 1,
@@ -49,7 +50,7 @@ export function readView(url: URL): View {
 export function writeView(v: View): string {
   const p = new URLSearchParams();
   if (v.q) p.set("q", v.q);
-  if (v.filter !== "active") p.set("filter", v.filter);
+  if (v.filter !== "all") p.set("filter", v.filter);
   if (v.sort !== DEFAULT_SORT) p.set("sort", v.sort);
   if (v.saved !== null) p.set("saved", String(v.saved));
   if (v.page > 1) p.set("page", String(v.page));
@@ -92,7 +93,6 @@ export function navigate(patch: Partial<View>, opts: { replace?: boolean } = {})
 export function listParams(v: View, pageSize: number): ListParams {
   const params: ListParams = {
     q: v.q,
-    scope: v.filter === "archived" ? "archived" : "active",
     sort: v.sort,
     limit: pageSize,
     offset: (v.page - 1) * pageSize,

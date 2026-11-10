@@ -4,7 +4,7 @@ import { listParams, nextURL, readView, writeView, type View } from "./view.ts";
 
 const base: View = {
   q: "",
-  filter: "active",
+  filter: "all",
   sort: "added_desc",
   saved: null,
   page: 1,
@@ -25,7 +25,6 @@ test("readView/writeView round trip for each param", () => {
   const cases: [Partial<View>, string][] = [
     [{ q: "foo #go" }, "?q=foo+%23go"],
     [{ filter: "unread" }, "?filter=unread"],
-    [{ filter: "archived" }, "?filter=archived"],
     [{ sort: "title_asc" }, "?sort=title_asc"],
     [{ saved: 3 }, "?saved=3"],
     [{ page: 4 }, "?page=4"],
@@ -86,26 +85,31 @@ test("garbage params fall back to defaults", () => {
   });
 });
 
+test("retired filters (active, archived) load as All", () => {
+  assert.deepEqual(read("?filter=archived"), base);
+  assert.deepEqual(read("?filter=active"), base);
+  assert.deepEqual(read("?q=x&filter=archived"), { ...base, q: "x" });
+  assert.equal(writeView(read("?filter=archived&sort=title_asc")), "?sort=title_asc");
+  assert.equal(writeView({ ...base, filter: "all" }), "");
+});
+
 test("listParams maps the filters and offsets", () => {
   assert.deepEqual(listParams({ ...base, q: "a" }, 30), {
     q: "a",
-    scope: "active",
     sort: "added_desc",
     limit: 30,
     offset: 0,
   });
   assert.deepEqual(listParams({ ...base, filter: "unread", page: 3, saved: 5 }, 20), {
     q: "",
-    scope: "active",
     unread: "yes",
     sort: "added_desc",
     savedSearch: 5,
     limit: 20,
     offset: 40,
   });
-  assert.deepEqual(listParams({ ...base, filter: "archived", sort: "title_asc" }, 10), {
+  assert.deepEqual(listParams({ ...base, filter: "all", sort: "title_asc" }, 10), {
     q: "",
-    scope: "archived",
     sort: "title_asc",
     limit: 10,
     offset: 0,
@@ -117,6 +121,7 @@ test("nextURL merges a patch, keeps unrelated state and resets the page on searc
   assert.equal(nextURL(cur, { view: null }), "/?q=a&page=3");
   assert.equal(nextURL(cur, { page: 4 }), "/?q=a&page=4&view=2");
   assert.equal(nextURL(cur, { q: "b" }), "/?q=b&view=2");
-  assert.equal(nextURL(cur, { filter: "archived" }), "/?q=a&filter=archived&view=2");
+  assert.equal(nextURL(cur, { filter: "unread" }), "/?q=a&filter=unread&view=2");
+  assert.equal(nextURL(new URL("http://b/?filter=unread&page=2"), { filter: "all" }), "/");
   assert.equal(nextURL(new URL("http://b/x?edit=1"), { edit: null }), "/x");
 });
