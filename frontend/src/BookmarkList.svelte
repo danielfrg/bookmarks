@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick, untrack } from "svelte";
+  import { slide } from "svelte/transition";
   import { Button, EmptyState, Modal, Spinner } from "@kenn-io/kit-ui";
   import { api, type Bookmark, type BulkAction } from "./lib/api.ts";
   import { activeTagsOf, bulkRequest, displayTitle } from "./lib/query.ts";
@@ -22,6 +23,8 @@
     listKey: string;
     reloadKey: number;
     suggestions?: string[];
+    /** Select mode, toggled from the top bar. */
+    selectMode?: boolean;
   }
   let {
     status,
@@ -37,6 +40,7 @@
     listKey,
     reloadKey,
     suggestions = [],
+    selectMode = $bindable(false),
   }: Props = $props();
 
   let busyId = $state<number | null>(null);
@@ -47,7 +51,6 @@
   let areaEl: HTMLElement | undefined;
 
   // Bulk selection.
-  let selectMode = $state(false);
   let selected = $state<Set<number>>(new Set());
   let allMatching = $state(false);
   let bulkBusy = $state(false);
@@ -55,6 +58,20 @@
   let bulkError = $state("");
   let panelOpen = $state(false);
   let messageTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // Leaving select mode (from here or the top bar) drops the selection.
+  $effect(() => {
+    if (selectMode) return;
+    untrack(() => {
+      selected = new Set();
+      allMatching = false;
+      bulkError = "";
+      panelOpen = false;
+    });
+  });
+
+  // The bulk bar slides in and out, unless reduced motion is preferred.
+  const slideMs = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 160;
 
   // A new search, filter or page drops the selection (select mode stays on).
   $effect(() => {
@@ -279,28 +296,40 @@
     </EmptyState>
   {:else}
     {#if selectMode}
-      <div class="select-head">
-        <label class="select-all">
-          <input type="checkbox" checked={pageSelected} onchange={togglePage} />
-          Select page
-        </label>
-        {#if allMatching}
-          <span>All {count} matching selected.</span>
-          <button type="button" class="link" onclick={() => (allMatching = false)}>Clear</button>
-        {:else if pageSelected && count > items.length}
-          {#if canSelectAll}
-            <button type="button" class="link" onclick={() => (allMatching = true)}>
-              Select all {count} matching
-            </button>
-          {:else}
-            <span
-              class="muted"
-              title="Bulk actions on a whole saved search are not supported; select rows instead."
-            >
-              Select all matching is unavailable in a saved search
-            </span>
+      <div class="bulk-top" transition:slide={{ duration: slideMs }}>
+        <BulkBar
+          count={selectedCount}
+          busy={bulkBusy}
+          error={bulkError}
+          canDelete={canDeleteSelection}
+          {suggestions}
+          run={runBulk}
+          onexit={exitSelect}
+          bind:panelOpen
+        />
+        <div class="select-head">
+          <label class="select-all">
+            <input type="checkbox" checked={pageSelected} onchange={togglePage} />
+            Select all
+          </label>
+          {#if allMatching}
+            <span>All {count} matching selected.</span>
+            <button type="button" class="link" onclick={() => (allMatching = false)}>Clear</button>
+          {:else if pageSelected && count > items.length}
+            {#if canSelectAll}
+              <button type="button" class="link" onclick={() => (allMatching = true)}>
+                Select all {count} matching
+              </button>
+            {:else}
+              <span
+                class="muted"
+                title="Bulk actions on a whole saved search are not supported; select rows instead."
+              >
+                Select all matching is unavailable in a saved search
+              </span>
+            {/if}
           {/if}
-        {/if}
+        </div>
       </div>
     {/if}
     <ul class="bm-list" class:stale={status === "loading"}>
@@ -326,13 +355,6 @@
     </ul>
     <div class="pager">
       <span class="muted">Showing {first}–{last} of {count}</span>
-      <Button
-        size="sm"
-        disabled={bulkBusy}
-        onclick={() => (selectMode ? exitSelect() : (selectMode = true))}
-      >
-        {selectMode ? "Cancel select" : "Select"}
-      </Button>
       <span class="grow"></span>
       <Button size="sm" disabled={view.page <= 1} onclick={() => navigate({ page: view.page - 1 })}>
         Previous
@@ -341,18 +363,7 @@
         Next
       </Button>
     </div>
-    {#if selectMode}
-      <BulkBar
-        count={selectedCount}
-        busy={bulkBusy}
-        error={bulkError}
-        canDelete={canDeleteSelection}
-        {suggestions}
-        run={runBulk}
-        onexit={exitSelect}
-        bind:panelOpen
-      />
-    {:else if bulkMessage}
+    {#if !selectMode && bulkMessage}
       <p class="bulk-msg standalone" role="status">{bulkMessage}</p>
     {/if}
   {/if}

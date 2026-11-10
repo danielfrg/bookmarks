@@ -60,3 +60,17 @@ func TestMCPMountedOutsideAPIGuard(t *testing.T) {
 		t.Fatalf("%d %s", w.Code, w.Body)
 	}
 }
+
+func TestPagePathsServeIndex(t *testing.T) {
+	h := NewHandler(fstest.MapFS{"index.html": {Data: []byte("hi")}}, Deps{Ping: func(context.Context) error { return nil }})
+	for _, p := range []string{"/tags", "/saved", "/settings", "/settings/general", "/settings/api", "/settings/import-export"} {
+		if w := get(h, p); w.Code != 200 || w.Body.String() != "hi" {
+			t.Errorf("%s: %d", p, w.Code)
+		}
+	}
+	for _, p := range []string{"/nope", "/tags/x", "/settings/bogus", "/settings/api/x", "/saved/1"} {
+		if w := get(h, p); w.Code != 404 {
+			t.Errorf("%s: %d, want 404", p, w.Code)
+		}
+	}
+}

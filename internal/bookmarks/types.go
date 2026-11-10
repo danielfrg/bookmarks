@@ -21,7 +21,7 @@ const (
 	SourceExtension ArchiveSource = "extension"
 	SourceServer    ArchiveSource = "server"
 	SourceUpload    ArchiveSource = "upload"
-	SourceImport    ArchiveSource = "import"
+	SourceImport    ArchiveSource = "import" // migrated from linkding; not accepted for new archives
 )
 
 type Bookmark struct {
@@ -42,7 +42,8 @@ type Bookmark struct {
 
 	// Read-only, filled by store queries.
 	ArchiveCount     int
-	BasicCaptureOnly bool // at least one archive and every archive has source "server"
+	BasicCaptureOnly bool  // at least one archive and every archive has source "server"
+	LatestArchiveID  int64 // newest archive (as listed in the details), 0 when none
 	ReaderStatus     ReaderStatus
 }
 

@@ -15,10 +15,13 @@
   interface Props {
     view: View;
     panelOpen: boolean;
+    /** Bulk select mode on the list. */
+    selecting: boolean;
     ontogglepanel: () => void;
+    onselect: () => void;
     onhelp: () => void;
   }
-  let { view, panelOpen, ontogglepanel, onhelp }: Props = $props();
+  let { view, panelOpen, selecting, ontogglepanel, onselect, onhelp }: Props = $props();
 
   let text = $state("");
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -128,6 +131,12 @@
         <PlusIcon size={14} /> Add
       </Button>
       {#if onList}
+        <Button
+          size="sm"
+          class={selecting ? "select-trigger on" : "select-trigger"}
+          title="Select bookmarks for bulk actions"
+          onclick={onselect}>Select</Button
+        >
         <SelectDropdown
           title="Sort"
           options={sorts}

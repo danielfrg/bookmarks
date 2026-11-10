@@ -312,3 +312,30 @@ func TestSearchHitsPopulated(t *testing.T) {
 		t.Fatalf("got %+v want %+v", r.Hits, want)
 	}
 }
+
+func TestLatestArchiveID(t *testing.T) {
+	s := openTest(t)
+	ctx := context.Background()
+	b := addBM(t, s, 1, "https://a.test", "a")
+	bk, _ := s.GetBookmark(ctx, b)
+	if bk.LatestArchiveID != 0 {
+		t.Fatalf("no archive: got %d", bk.LatestArchiveID)
+	}
+	for _, at := range []string{"2026-01-02T00:00:00Z", "2026-03-01T00:00:00Z", "2026-02-01T00:00:00Z"} {
+		if _, err := s.db.Exec(`INSERT INTO archives(bookmark_id,source,created_at) VALUES(?,?,?)`, b, "extension", at); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var newest int64
+	if err := s.db.QueryRow(`SELECT id FROM archives WHERE created_at='2026-03-01T00:00:00Z'`).Scan(&newest); err != nil {
+		t.Fatal(err)
+	}
+	bk, _ = s.GetBookmark(ctx, b)
+	if bk.LatestArchiveID != newest {
+		t.Fatalf("latest = %d, want %d", bk.LatestArchiveID, newest)
+	}
+	r := search(t, s, SearchQuery{})
+	if r.Hits[0].LatestArchiveID != newest {
+		t.Fatalf("search latest = %d, want %d", r.Hits[0].LatestArchiveID, newest)
+	}
+}

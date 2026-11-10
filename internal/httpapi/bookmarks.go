@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -27,6 +28,7 @@ type bookmarkJSON struct {
 	DateModified     time.Time `json:"date_modified"`
 	ArchiveCount     int       `json:"archive_count"`
 	BasicCaptureOnly bool      `json:"basic_capture_only"`
+	LatestArchiveURL string    `json:"latest_archive_url" doc:"View URL of the newest archive, empty when there is none"`
 	ReaderStatus     string    `json:"reader_status"`
 }
 
@@ -44,6 +46,9 @@ func toBookmark(b bookmarks.Bookmark) bookmarkJSON {
 	}
 	if j.Tags == nil {
 		j.Tags = []string{}
+	}
+	if b.LatestArchiveID != 0 {
+		j.LatestArchiveURL = fmt.Sprintf("/archives/%d", b.LatestArchiveID)
 	}
 	if j.ReaderStatus == "" {
 		j.ReaderStatus = string(bookmarks.ReaderNone)
@@ -83,27 +88,23 @@ type listOutput struct {
 }
 
 type createBody struct {
-	_            struct{}   `additionalProperties:"true"`
-	URL          string     `json:"url"`
-	Title        *string    `json:"title,omitempty"`
-	Description  *string    `json:"description,omitempty"`
-	Notes        *string    `json:"notes,omitempty"`
-	Tags         *[]string  `json:"tags,omitempty"`
-	Unread       *bool      `json:"unread,omitempty"`
-	DateAdded    *time.Time `json:"date_added,omitempty"`
-	DateModified *time.Time `json:"date_modified,omitempty"`
+	_           struct{}  `additionalProperties:"true"`
+	URL         string    `json:"url"`
+	Title       *string   `json:"title,omitempty"`
+	Description *string   `json:"description,omitempty"`
+	Notes       *string   `json:"notes,omitempty"`
+	Tags        *[]string `json:"tags,omitempty"`
+	Unread      *bool     `json:"unread,omitempty"`
 }
 
 type patchBody struct {
-	_            struct{}   `additionalProperties:"true"`
-	URL          string     `json:"url,omitempty"`
-	Title        *string    `json:"title,omitempty"`
-	Description  *string    `json:"description,omitempty"`
-	Notes        *string    `json:"notes,omitempty"`
-	Tags         *[]string  `json:"tags,omitempty"`
-	Unread       *bool      `json:"unread,omitempty"`
-	DateAdded    *time.Time `json:"date_added,omitempty"`
-	DateModified *time.Time `json:"date_modified,omitempty"`
+	_           struct{}  `additionalProperties:"true"`
+	URL         string    `json:"url,omitempty"`
+	Title       *string   `json:"title,omitempty"`
+	Description *string   `json:"description,omitempty"`
+	Notes       *string   `json:"notes,omitempty"`
+	Tags        *[]string `json:"tags,omitempty"`
+	Unread      *bool     `json:"unread,omitempty"`
 }
 
 type createInput struct {
@@ -179,7 +180,6 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 			b, created, err := svc.Save(ctx, service.SaveInput{
 				URL: in.Body.URL, Title: in.Body.Title, Description: in.Body.Description, Notes: in.Body.Notes,
 				Tags: in.Body.Tags, Unread: in.Body.Unread,
-				DateAdded: in.Body.DateAdded, DateModified: in.Body.DateModified,
 				Capture: service.CaptureMode(in.Capture),
 			})
 			if err != nil {
@@ -228,7 +228,6 @@ func registerBookmarks(api huma.API, svc *service.Service) {
 			b, err := svc.Update(ctx, in.ID, service.SaveInput{
 				URL: in.Body.URL, Title: in.Body.Title, Description: in.Body.Description, Notes: in.Body.Notes,
 				Tags: in.Body.Tags, Unread: in.Body.Unread,
-				DateAdded: in.Body.DateAdded, DateModified: in.Body.DateModified,
 			})
 			if err != nil {
 				return nil, apiError(err)

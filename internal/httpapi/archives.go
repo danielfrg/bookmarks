@@ -71,10 +71,10 @@ func registerArchives(api huma.API, svc *service.Service) {
 //
 // It is a plain handler instead of a Huma operation so the file part streams
 // from the request to disk through r.MultipartReader (ParseMultipartForm would
-// buffer the whole upload). Parts are read in order, so the `source` and
-// `created_at` fields must come BEFORE the `file` part.
+// buffer the whole upload). Parts are read in order, so the `source` field
+// must come BEFORE the `file` part.
 func uploadArchive(svc *service.Service) http.HandlerFunc {
-	const orderMsg = "the source and created_at fields must come before the file part"
+	const orderMsg = "the source field must come before the file part"
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 		if err != nil || id < 1 {
@@ -113,7 +113,7 @@ func uploadArchive(svc *service.Service) http.HandlerFunc {
 				return
 			}
 			switch part.FormName() {
-			case "source", "created_at":
+			case "source":
 				if stored != nil {
 					// The file was already stored with default values; the
 					// deferred cleanup removes it.
@@ -125,16 +125,7 @@ func uploadArchive(svc *service.Service) http.HandlerFunc {
 					writeError(w, err)
 					return
 				}
-				if part.FormName() == "source" {
-					in.Source = bookmarks.ArchiveSource(strings.TrimSpace(string(value)))
-					continue
-				}
-				t, err := time.Parse(time.RFC3339, strings.TrimSpace(string(value)))
-				if err != nil {
-					writeProblem(w, http.StatusUnprocessableEntity, "created_at: must be an RFC 3339 timestamp")
-					return
-				}
-				in.CreatedAt = &t
+				in.Source = bookmarks.ArchiveSource(strings.TrimSpace(string(value)))
 			case "file":
 				if stored != nil {
 					writeProblem(w, http.StatusUnprocessableEntity, "only one file part is allowed")

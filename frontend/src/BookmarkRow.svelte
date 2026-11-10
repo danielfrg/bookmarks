@@ -80,12 +80,21 @@
         >{/if}
       {#if b.basic_capture_only}<span class="badge">basic capture</span>{/if}
       <div class="actions">
+        {#if b.latest_archive_url}
+          <a
+            class="act"
+            href={b.latest_archive_url}
+            target="_blank"
+            rel="noopener"
+            aria-label="View the archived page of {displayTitle(b)}">View</a
+          >
+        {/if}
         <button
           type="button"
           class="act"
           aria-label="View {displayTitle(b)}"
           data-view-trigger={b.id}
-          onclick={onview}>View</button
+          onclick={onview}>Details</button
         >
         <button
           type="button"

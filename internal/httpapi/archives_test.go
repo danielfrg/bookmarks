@@ -43,7 +43,6 @@ func TestUploadArchiveAndView(t *testing.T) {
 	html := "<html><body>hello <script>1</script></body></html>"
 	ctype, body := multipartBody([][3]string{
 		{"source", "", "extension"},
-		{"created_at", "", "2026-01-02T03:04:05Z"},
 		{"file", "page.html", html},
 	})
 	path := fmt.Sprintf("/api/bookmarks/%d/archives", b.ID)
@@ -53,7 +52,7 @@ func TestUploadArchiveAndView(t *testing.T) {
 	}
 	a := decode[archiveResp](t, w)
 	if a.Source != "extension" || a.ContentType != "text/html" || a.DisplayName != "page.html" || a.FileSize != int64(len(html)) ||
-		a.CreatedAt != "2026-01-02T03:04:05Z" ||
+		a.CreatedAt == "" ||
 		a.ViewURL != fmt.Sprintf("/archives/%d", a.ID) || a.DownloadURL != fmt.Sprintf("/archives/%d/download", a.ID) {
 		t.Fatalf("%+v", a)
 	}
@@ -83,6 +82,9 @@ func TestUploadArchiveAndView(t *testing.T) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 	if w := e.do("GET", fmt.Sprintf("/api/bookmarks/%d", b.ID), nil); !strings.Contains(w.Body.String(), `"archive_count":1`) {
+		t.Fatal(w.Body.String())
+	}
+	if w := e.do("GET", fmt.Sprintf("/api/bookmarks/%d", b.ID), nil); !strings.Contains(w.Body.String(), `"latest_archive_url":"`+a.ViewURL+`"`) {
 		t.Fatal(w.Body.String())
 	}
 
@@ -133,9 +135,6 @@ func TestUploadValidation(t *testing.T) {
 	}
 	if w := send(path, [][3]string{{"source", "", "bogus"}, {"file", "a.html", "x"}}); w.Code != 422 {
 		t.Fatal("bad source", w.Code)
-	}
-	if w := send(path, [][3]string{{"created_at", "", "yesterday"}, {"file", "a.html", "x"}}); w.Code != 422 {
-		t.Fatal("bad created_at", w.Code)
 	}
 	w := send(path, [][3]string{{"file", "a.html", "x"}, {"source", "", "extension"}})
 	if w.Code != 422 || !strings.Contains(w.Body.String(), "before") {

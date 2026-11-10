@@ -6,7 +6,7 @@
   import FileTypeIcon from "@lucide/svelte/icons/file-type";
   import { tick } from "svelte";
   import { api, ApiError, type Archive, type Bookmark, type ReaderPage } from "./lib/api.ts";
-  import { displayTitle, formatBytes, hostOf } from "./lib/query.ts";
+  import { displayTitle, formatBytes } from "./lib/query.ts";
   import { navigate } from "./lib/view.ts";
 
   interface Props {
@@ -206,14 +206,24 @@
 
       <div class="d-url">
         <a class="mono" href={bm.url} target="_blank" rel="noopener noreferrer">{bm.url}</a>
-        {#if hostOf(bm.url)}<span class="muted small">{hostOf(bm.url)}</span>{/if}
       </div>
 
       {#if bm.tags.length > 0}
         <section>
           <h3 class="d-label">Tags</h3>
           <div class="d-tags">
-            {#each bm.tags as tag (tag)}<span class="tag-static">#{tag}</span>{/each}
+            {#each bm.tags as tag (tag)}<button
+                type="button"
+                class="tag"
+                onclick={() =>
+                  navigate({
+                    view: null,
+                    pageName: "list",
+                    read: null,
+                    q: `#${tag}`,
+                    saved: null,
+                  })}>#{tag}</button
+              >{/each}
           </div>
         </section>
       {/if}

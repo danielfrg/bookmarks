@@ -20,13 +20,16 @@
     DEFAULT_ITEMS_PER_PAGE,
     importSummary,
   } from "./lib/pages.ts";
+  import { navigate, type SettingsSection as SectionId } from "./lib/view.ts";
   import PageHeader from "./PageHeader.svelte";
 
   interface Props {
+    /** The section in the URL (/settings/<section>). */
+    section: SectionId;
     onsettings: (s: Settings) => void;
     onchanged: () => void;
   }
-  let { onsettings, onchanged }: Props = $props();
+  let { section, onsettings, onchanged }: Props = $props();
 
   const categories = [
     { id: "general", label: "General" },
@@ -39,7 +42,6 @@
   let settings = $state<Settings | null>(null);
   let status = $state<"loading" | "ready" | "error">("loading");
   let loadError = $state("");
-  let active = $state("general");
 
   let pending = $state(0);
   let queue: Promise<void> = Promise.resolve();
@@ -197,7 +199,7 @@
   // Load the tokens the first time the API category is shown.
   let tokensRequested = false;
   $effect(() => {
-    if (active !== "api" || tokensRequested) return;
+    if (section !== "api" || tokensRequested) return;
     tokensRequested = true;
     void loadTokens();
   });
@@ -276,7 +278,11 @@
     </EmptyState>
   {:else}
     {#if saveError}<p class="notice error" role="alert">{saveError}</p>{/if}
-    <SettingsLayout {categories} bind:active title="">
+    <SettingsLayout
+      {categories}
+      bind:active={() => section, (id) => navigate({ section: id as SectionId })}
+      title=""
+    >
       {#snippet panel(id)}
         {#if id === "general"}
           <SettingsSection title="General">
@@ -392,15 +398,8 @@
             </div>
           </SettingsSection>
         {:else if id === "api"}
-          <SettingsSection
-            title="API"
-            description="Tokens let the browser extension, the linkding importer and other apps use the API and MCP."
-          >
+          <SettingsSection title="API">
             <div class="setting stacked">
-              <p class="small">
-                Send a token as <code class="mono">Authorization: Bearer &lt;token&gt;</code>.
-                Deleting a token stops every app that uses it.
-              </p>
               <p class="small">
                 API docs: <a href="/api/docs" target="_blank" rel="noreferrer">/api/docs</a>
               </p>
@@ -440,6 +439,7 @@
               >
                 <TextInput
                   id="token-name"
+                  class="token-name-input"
                   placeholder="Name, e.g. Chrome extension"
                   bind:value={tokenName}
                   disabled={tokenBusy}
@@ -473,8 +473,7 @@
                       <div class="saved-main">
                         <span class="token-name">{t.name}</span>
                         <span class="small muted">
-                          <code class="mono">bk_{t.prefix}…</code>
-                          · created
+                          Created
                           <span title={formatTimestamp(t.created_at)}
                             >{formatRelativeTime(t.created_at)}</span
                           >

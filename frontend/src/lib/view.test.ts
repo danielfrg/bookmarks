@@ -13,12 +13,14 @@ const base: View = {
   create: null,
   read: null,
   pageName: "list",
+  section: "general",
 };
-const read = (search: string) => readView(new URL(`http://b/${search}`));
+/** Reads a path+search, e.g. "?q=a" (the list) or "settings/api". */
+const read = (url: string) => readView(new URL(`http://b/${url.replace(/^\//, "")}`));
 
 test("defaults read from an empty URL and write nothing", () => {
   assert.deepEqual(read(""), base);
-  assert.equal(writeView(base), "");
+  assert.equal(writeView(base), "/");
 });
 
 test("readView/writeView round trip for each param", () => {
@@ -31,19 +33,23 @@ test("readView/writeView round trip for each param", () => {
     [{ view: 12 }, "?view=12"],
     [{ edit: 7 }, "?edit=7"],
     [{ read: 9 }, "?read=9"],
-    [{ pageName: "tags" }, "?page_name=tags"],
-    [{ pageName: "saved" }, "?page_name=saved"],
-    [{ pageName: "settings" }, "?page_name=settings"],
+    [{ pageName: "tags" }, "/tags"],
+    [{ pageName: "saved" }, "/saved"],
+    [{ pageName: "settings" }, "/settings/general"],
+    [{ pageName: "settings", section: "api" }, "/settings/api"],
+    [{ pageName: "settings", section: "import-export" }, "/settings/import-export"],
+    [{ pageName: "tags", view: 4 }, "/tags?view=4"],
     [{ create: { url: "", title: "" } }, "?new=1"],
     [
       { create: { url: "https://a.test/x?y=1", title: "A & B" } },
       "?new=1&url=https%3A%2F%2Fa.test%2Fx%3Fy%3D1&title=A+%26+B",
     ],
   ];
-  for (const [patch, search] of cases) {
+  for (const [patch, url] of cases) {
     const v = { ...base, ...patch };
-    assert.equal(writeView(v), search);
-    assert.deepEqual(read(search), v);
+    const want = url.startsWith("/") ? url : `/${url}`;
+    assert.equal(writeView(v), want);
+    assert.deepEqual(read(want), v);
   }
 });
 
@@ -58,9 +64,10 @@ test("writeView uses a stable param order", () => {
     edit: 5,
     create: { url: "u", title: "t" },
     read: 6,
-    pageName: "tags",
+    pageName: "list",
+    section: "general",
   };
-  const keys = [...new URLSearchParams(writeView(v)).keys()];
+  const keys = [...new URLSearchParams(writeView(v).split("?")[1]).keys()];
   assert.deepEqual(keys, [
     "q",
     "filter",
@@ -73,7 +80,6 @@ test("writeView uses a stable param order", () => {
     "url",
     "title",
     "read",
-    "page_name",
   ]);
 });
 
@@ -83,14 +89,27 @@ test("garbage params fall back to defaults", () => {
     ...base,
     sort: "added_desc",
   });
+  assert.deepEqual(read("settings/bogus"), { ...base, pageName: "settings" });
+  assert.deepEqual(read("nope"), base);
+});
+
+test("pages keep only their own state in the URL", () => {
+  assert.equal(
+    writeView({ ...base, q: "x", page: 2, filter: "unread", pageName: "tags" }),
+    "/tags",
+  );
+});
+
+test("?page_name= is not a page anymore", () => {
+  assert.deepEqual(read("?page_name=tags"), base);
 });
 
 test("retired filters (active, archived) load as All", () => {
   assert.deepEqual(read("?filter=archived"), base);
   assert.deepEqual(read("?filter=active"), base);
   assert.deepEqual(read("?q=x&filter=archived"), { ...base, q: "x" });
-  assert.equal(writeView(read("?filter=archived&sort=title_asc")), "?sort=title_asc");
-  assert.equal(writeView({ ...base, filter: "all" }), "");
+  assert.equal(writeView(read("?filter=archived&sort=title_asc")), "/?sort=title_asc");
+  assert.equal(writeView({ ...base, filter: "all" }), "/");
 });
 
 test("listParams maps the filters and offsets", () => {
@@ -123,5 +142,10 @@ test("nextURL merges a patch, keeps unrelated state and resets the page on searc
   assert.equal(nextURL(cur, { q: "b" }), "/?q=b&view=2");
   assert.equal(nextURL(cur, { filter: "unread" }), "/?q=a&filter=unread&view=2");
   assert.equal(nextURL(new URL("http://b/?filter=unread&page=2"), { filter: "all" }), "/");
-  assert.equal(nextURL(new URL("http://b/x?edit=1"), { edit: null }), "/x");
+  assert.equal(nextURL(new URL("http://b/tags?edit=1"), { edit: null }), "/tags");
+  assert.equal(
+    nextURL(new URL("http://b/settings/api"), { section: "metadata" }),
+    "/settings/metadata",
+  );
+  assert.equal(nextURL(new URL("http://b/settings/api"), { pageName: "list" }), "/");
 });

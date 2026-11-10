@@ -13,7 +13,18 @@ export interface View {
   create: { url: string; title: string } | null;
   read: number | null;
   pageName: PageName;
+  /** Settings section, in the path: /settings/<section>. */
+  section: SettingsSection;
 }
+
+export const SETTINGS_SECTIONS = [
+  "general",
+  "metadata",
+  "auto-tagging",
+  "import-export",
+  "api",
+] as const;
+export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 const DEFAULT_SORT = "added_desc";
 const SORTS = ["added_desc", "added_asc", "title_asc", "title_desc"];
@@ -27,11 +38,19 @@ function positiveInt(value: string | null): number | null {
   return Number.isSafeInteger(n) && n >= 1 ? n : null;
 }
 
+/** The page and settings section from the path ("/tags", "/settings/api"). */
+function readPath(url: URL): { pageName: PageName; section: SettingsSection } {
+  const [first = "", second = ""] = url.pathname.split("/").filter(Boolean);
+  const name = first as PageName;
+  const section = SETTINGS_SECTIONS.find((s) => s === second) ?? "general";
+  return { pageName: PAGES.includes(name) ? name : "list", section };
+}
+
 export function readView(url: URL): View {
   const p = url.searchParams;
   const filter = p.get("filter") as Filter;
   const sort = p.get("sort") ?? "";
-  const pageName = p.get("page_name") as PageName;
+  const { pageName, section } = readPath(url);
   return {
     q: p.get("q") ?? "",
     filter: FILTERS.includes(filter) ? filter : "all",
@@ -42,18 +61,24 @@ export function readView(url: URL): View {
     edit: positiveInt(p.get("edit")),
     create: p.has("new") ? { url: p.get("url") ?? "", title: p.get("title") ?? "" } : null,
     read: positiveInt(p.get("read")),
-    pageName: PAGES.includes(pageName) ? pageName : "list",
+    pageName,
+    section,
   };
 }
 
-/** "?..." for the view with defaults omitted, "" when everything is default. */
+/**
+ * The path and "?..." for the view, defaults omitted: "/" for the default list,
+ * "/tags", "/settings/api". List state (search, filter, sort, saved search,
+ * page) only appears on the list.
+ */
 export function writeView(v: View): string {
   const p = new URLSearchParams();
-  if (v.q) p.set("q", v.q);
-  if (v.filter !== "all") p.set("filter", v.filter);
-  if (v.sort !== DEFAULT_SORT) p.set("sort", v.sort);
-  if (v.saved !== null) p.set("saved", String(v.saved));
-  if (v.page > 1) p.set("page", String(v.page));
+  const list = v.pageName === "list";
+  if (list && v.q) p.set("q", v.q);
+  if (list && v.filter !== "all") p.set("filter", v.filter);
+  if (list && v.sort !== DEFAULT_SORT) p.set("sort", v.sort);
+  if (list && v.saved !== null) p.set("saved", String(v.saved));
+  if (list && v.page > 1) p.set("page", String(v.page));
   if (v.view !== null) p.set("view", String(v.view));
   if (v.edit !== null) p.set("edit", String(v.edit));
   if (v.create) {
@@ -62,9 +87,14 @@ export function writeView(v: View): string {
     if (v.create.title) p.set("title", v.create.title);
   }
   if (v.read !== null) p.set("read", String(v.read));
-  if (v.pageName !== "list") p.set("page_name", v.pageName);
+  const path =
+    v.pageName === "list"
+      ? "/"
+      : v.pageName === "settings"
+        ? `/settings/${v.section}`
+        : `/${v.pageName}`;
   const s = p.toString();
-  return s ? `?${s}` : "";
+  return s ? `${path}?${s}` : path;
 }
 
 /**
@@ -79,7 +109,7 @@ export function nextURL(current: URL, patch: Partial<View>): string {
       v.page = 1;
     }
   }
-  return current.pathname + writeView(v);
+  return writeView(v);
 }
 
 /** Pushes (or replaces) the next view in history and tells listeners. */

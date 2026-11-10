@@ -67,6 +67,10 @@ func TestAddArchiveEnqueuesExtract(t *testing.T) {
 	if _, err := e.svc.AddArchive(ctx, b.ID, ArchiveInput{Source: "weird", Body: strings.NewReader("x")}); !errors.As(err, &ve) {
 		t.Fatalf("err = %v, want ValidationError", err)
 	}
+	// "import" only labels archives migrated from linkding; new ones can't use it.
+	if _, err := e.svc.AddArchive(ctx, b.ID, ArchiveInput{Source: bookmarks.SourceImport, Body: strings.NewReader("x")}); !errors.As(err, &ve) {
+		t.Fatalf("import source: err = %v, want ValidationError", err)
+	}
 	if _, err := e.svc.AddArchive(ctx, 999, ArchiveInput{Source: bookmarks.SourceUpload, Body: strings.NewReader("x")}); !errors.Is(err, store.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}

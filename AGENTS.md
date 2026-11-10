@@ -18,13 +18,12 @@ purpose; never commit them).
   extension (WXT + Svelte 5) in `/extension`.
 - Conventions follow `~/code/danielfrg/golinks`; check it first when unsure how
   something is done (build, embed, MCP transport, Dockerfile, CI).
-- `cmd/import-linkding` is a standalone client of linkding's and this app's REST
-  APIs. It is not part of the server.
 
 ## Vocabulary
 
 - **Archive**: a saved full-page file (single-file HTML, PDF, or upload). Each
-  has a source: `extension`, `server`, `upload`, `import`. There is no
+  has a source: `extension`, `server`, `upload`, or `import` (archives migrated
+  from linkding; nothing creates new ones). There is no
   linkding-style "archived bookmark" state; archive always means the file.
 - **Basic capture**: a `server`-source archive (Go fetch, no JavaScript). A
   bookmark with only basic captures shows a badge until the extension adds a full one.
@@ -36,7 +35,7 @@ purpose; never commit them).
 - Keep SQLite rollback journaling (no WAL); the database lives on NFS.
 - Keep SQL behind the store interface and full-text search behind its own
   interface; Postgres may replace SQLite later.
-- Routes: the REST API lives under `/api`, MCP at `/mcp`, files under `/archives`, `/favicons` and `/previews`, built frontend assets under `/assets`, and health checks at `/healthz` and `/readyz`. The index is `/` only; no SPA catch-all, unknown paths are 404.
+- Routes: the REST API lives under `/api`, MCP at `/mcp`, files under `/archives`, `/favicons` and `/previews`, built frontend assets under `/assets`, and health checks at `/healthz` and `/readyz`. The app pages are `/`, `/tags`, `/saved` and `/settings/{section}` (listed in `internal/httpapi/handler.go` and `frontend/src/lib/view.ts`); no SPA catch-all, unknown paths are 404.
 - The web UI has no auth (it runs behind Cloudflare Access / internal network).
   External API clients send an API token (`Bearer`/`Token`) created in Settings →
   API; only its SHA-256 is stored and the plaintext is shown once. `/api/tokens`

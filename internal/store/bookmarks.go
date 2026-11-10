@@ -12,7 +12,8 @@ const bookmarkColumns = `b.id,b.url,b.title,b.description,b.notes,b.unread,
  b.favicon_file,b.preview_file,b.web_archive_url,b.date_added,b.date_modified,
  (SELECT COUNT(*) FROM archives a WHERE a.bookmark_id=b.id),
  (SELECT COUNT(*) FROM archives a WHERE a.bookmark_id=b.id AND a.source<>'server'),
- COALESCE((SELECT r.status FROM reader_texts r WHERE r.bookmark_id=b.id),'none')`
+ COALESCE((SELECT r.status FROM reader_texts r WHERE r.bookmark_id=b.id),'none'),
+ COALESCE((SELECT a.id FROM archives a WHERE a.bookmark_id=b.id ORDER BY a.created_at DESC, a.id DESC LIMIT 1),0)`
 
 const selectBookmark = `SELECT ` + bookmarkColumns + ` FROM bookmarks b`
 
@@ -22,7 +23,7 @@ func scanBookmark(row scanner) (bookmarks.Bookmark, error) {
 	var added, modified, reader string
 	err := row.Scan(&b.ID, &b.URL, &b.Title, &b.Description, &b.Notes, &unread,
 		&b.FaviconFile, &b.PreviewFile, &b.WebArchiveURL, &added, &modified,
-		&b.ArchiveCount, &nonServer, &reader)
+		&b.ArchiveCount, &nonServer, &reader, &b.LatestArchiveID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return b, ErrNotFound
 	}

@@ -18,17 +18,18 @@ import (
 	"github.com/danielfrg/bookmarks/internal/store"
 )
 
-// ArchiveInput is a new archive file. CreatedAt defaults to now.
+// ArchiveInput is a new archive file, created now.
 type ArchiveInput struct {
 	Source                   bookmarks.ArchiveSource
 	ContentType, DisplayName string
-	CreatedAt                *time.Time
 	Body                     io.Reader
 }
 
+// validSource reports whether a new archive may have source s. "import" only
+// labels archives migrated from linkding.
 func validSource(s bookmarks.ArchiveSource) bool {
 	switch s {
-	case bookmarks.SourceExtension, bookmarks.SourceServer, bookmarks.SourceUpload, bookmarks.SourceImport:
+	case bookmarks.SourceExtension, bookmarks.SourceServer, bookmarks.SourceUpload:
 		return true
 	}
 	return false
@@ -58,7 +59,7 @@ func randomSuffix() string {
 // archive.ErrTooLarge.
 func (s *Service) AddArchive(ctx context.Context, bookmarkID int64, in ArchiveInput) (bookmarks.Archive, error) {
 	if !validSource(in.Source) {
-		return bookmarks.Archive{}, invalid("source", `must be "extension", "server", "upload" or "import"`)
+		return bookmarks.Archive{}, invalid("source", `must be "extension", "server" or "upload"`)
 	}
 	if in.Body == nil {
 		return bookmarks.Archive{}, invalid("body", "is required")
@@ -74,9 +75,6 @@ func (s *Service) AddArchive(ctx context.Context, bookmarkID int64, in ArchiveIn
 		DisplayName: in.DisplayName,
 		FileName:    fmt.Sprintf("%d/%d-%s-%s.gz", bookmarkID, now.UnixNano(), in.Source, randomSuffix()),
 		CreatedAt:   now,
-	}
-	if in.CreatedAt != nil {
-		a.CreatedAt = in.CreatedAt.UTC()
 	}
 	size, err := s.files.Write(a.FileName, in.Body, s.o.MaxUploadBytes)
 	if err != nil {

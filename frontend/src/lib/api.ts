@@ -12,6 +12,8 @@ export interface Bookmark {
   date_added: string;
   date_modified: string;
   archive_count: number;
+  /** View URL of the newest archive, "" when there is none. */
+  latest_archive_url: string;
   basic_capture_only: boolean;
   reader_status: "ok" | "failed" | "none";
   /** Only on list results; "" unless the search had a query. */

@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"net/http"
 	"path/filepath"
+	"slices"
 
 	"github.com/danielfrg/bookmarks/internal/mcp"
 	"github.com/danielfrg/bookmarks/internal/service"
@@ -23,6 +24,9 @@ type Deps struct {
 	MaxUploadBytes  int64
 	DataDir         string // favicons and previews live in DataDir/favicons and DataDir/previews
 }
+
+// settingsSections are the /settings/{section} pages (frontend/src/lib/view.ts).
+var settingsSections = []string{"general", "metadata", "auto-tagging", "import-export", "api"}
 
 func NewHandler(assets fs.FS, deps Deps) http.Handler {
 	mux := http.NewServeMux()
@@ -56,7 +60,18 @@ func NewHandler(assets fs.FS, deps Deps) http.Handler {
 	})
 	mux.Handle("/mcp", mcp.NewHandler(deps.Service, deps.MCPAllowedHosts))
 	mux.Handle("GET /assets/", web.Handler(assets))
-	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) { web.Index(w, r, assets, http.StatusOK) })
+	index := func(w http.ResponseWriter, r *http.Request) { web.Index(w, r, assets, http.StatusOK) }
+	// The app's pages; anything else stays a 404 (no SPA catch-all).
+	for _, p := range []string{"/{$}", "/tags", "/saved", "/settings"} {
+		mux.HandleFunc("GET "+p, index)
+	}
+	mux.HandleFunc("GET /settings/{section}", func(w http.ResponseWriter, r *http.Request) {
+		if !slices.Contains(settingsSections, r.PathValue("section")) {
+			http.NotFound(w, r)
+			return
+		}
+		index(w, r)
+	})
 	guarded := protectAPI(mux, deps.Service, deps.MaxUploadBytes)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Referrer-Policy", "no-referrer")

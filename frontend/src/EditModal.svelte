@@ -356,7 +356,6 @@
           disabled={saving}
           onchange={() => touch("tags")}
         />
-        <span class="small muted">Press Enter, space or comma to add a tag.</span>
       </div>
 
       <div class="field">
@@ -364,7 +363,7 @@
         <textarea
           id="{uid}-desc"
           class="field-area"
-          rows="3"
+          rows="5"
           disabled={saving}
           value={description}
           oninput={(e) => {
@@ -378,7 +377,7 @@
         <textarea
           id="{uid}-notes"
           class="field-area"
-          rows="4"
+          rows="5"
           disabled={saving}
           placeholder="Add notes…"
           value={notes}
@@ -386,7 +385,6 @@
             notes = e.currentTarget.value;
             touch("notes");
           }}></textarea>
-        <span class="small muted">Markdown is supported.</span>
       </div>
 
       <Checkbox

@@ -33,6 +33,11 @@
   let notice = $state("");
   let reloadKey = $state(0);
   let panelOpen = $state(false);
+  // Bulk select mode on the list, toggled from the top bar.
+  let selecting = $state(false);
+  $effect(() => {
+    if (view.pageName !== "list" || view.read !== null) selecting = false;
+  });
   let sideStatus = $state<"loading" | "ready" | "error">("loading");
   let settingsReady = $state(false);
   let helpOpen = $state(false);
@@ -196,7 +201,14 @@
   const onTag = (tag: string) => navigate({ q: toggleTagInQuery(view.q, tag), page: 1 });
 </script>
 
-<TopBar {view} {panelOpen} ontogglepanel={() => (panelOpen = !panelOpen)} onhelp={openHelp} />
+<TopBar
+  {view}
+  {panelOpen}
+  {selecting}
+  ontogglepanel={() => (panelOpen = !panelOpen)}
+  onselect={() => (selecting = !selecting)}
+  onhelp={openHelp}
+/>
 {#if view.read !== null}
   {#key view.read}
     <ReaderPage id={view.read} />
@@ -206,6 +218,7 @@
     <main class="main" tabindex="-1">
       {#if notice}<p class="notice" role="status">{notice}</p>{/if}
       <BookmarkList
+        bind:selectMode={selecting}
         {listKey}
         {reloadKey}
         {status}
@@ -228,7 +241,7 @@
 {:else if view.pageName === "saved"}
   <SavedSearchesPage onchanged={reload} />
 {:else}
-  <SettingsPage onsettings={applySettings} onchanged={reload} />
+  <SettingsPage section={view.section} onsettings={applySettings} onchanged={reload} />
 {/if}
 
 {#if view.view !== null}
