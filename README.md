@@ -62,6 +62,7 @@ open dialogs are all in the URL, so reloads and back/forward work.
 | `!unread` | Unread bookmarks |
 | `!untagged` | Bookmarks without tags |
 | `!basic` | Basic captures (no full archive) |
+| `!noarchive` | Bookmarks with no archive at all |
 | `"exact phrase"` | Phrase match |
 | `foo and bar`, `foo or bar`, `not foo` | Boolean operators |
 

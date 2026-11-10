@@ -149,6 +149,8 @@ func TestSearchTagsKeywordsBooleans(t *testing.T) {
 		{"not #a", []int64{b1, b2, b4, b5}},
 		{"!untagged", []int64{b5}},
 		{"!basic", []int64{b3}},
+		{"!noarchive", []int64{b1, b2, b5}},
+		{"!noarchive or !basic", []int64{b1, b2, b3, b5}},
 		{"!bogus", []int64{b1, b2, b3, b4, b5}},
 		{`""`, []int64{b1, b2, b3, b4, b5}},
 		{"(#a or #b) four", []int64{b4}},

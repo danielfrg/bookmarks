@@ -143,7 +143,7 @@ func matchesEverything(e query.Expr) bool {
 		return !strings.ContainsFunc(v.Text, func(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) })
 	case query.Keyword:
 		switch v.Name {
-		case "unread", "untagged", "basic":
+		case "unread", "untagged", "basic", "noarchive":
 			return false
 		}
 		return true

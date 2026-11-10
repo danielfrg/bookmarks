@@ -96,6 +96,8 @@ func (c *compiler) compile(e query.Expr) string {
 			return `NOT EXISTS (SELECT 1 FROM bookmark_tags bt WHERE bt.bookmark_id=b.id)`
 		case "basic":
 			return `(EXISTS (SELECT 1 FROM archives a WHERE a.bookmark_id=b.id) AND NOT EXISTS (SELECT 1 FROM archives a WHERE a.bookmark_id=b.id AND a.source<>'server'))`
+		case "noarchive":
+			return `NOT EXISTS (SELECT 1 FROM archives a WHERE a.bookmark_id=b.id)`
 		}
 		return "1=1"
 	case query.Not:

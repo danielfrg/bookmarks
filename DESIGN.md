@@ -28,7 +28,7 @@ Preserve `scrollbar-gutter: stable`.
 Linkding's structure:
 
 - **Main page:** no left sidebar. Top bar: wordmark, search (accepts the query
-  syntax: `#tag`, `!unread`, `!untagged`, `!basic`, `and/or/not`, quotes),
+  syntax: `#tag`, `!unread`, `!untagged`, `!basic`, `!noarchive`, `and/or/not`, quotes),
   Active / Unread / Archived filter pills, Add. A dense bookmark list; a right
   panel with Saved searches, then an A–Z grouped tag cloud.
 - **List row:** favicon, title (unread dot; clicking opens the live page), one-line
