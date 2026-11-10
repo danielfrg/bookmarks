@@ -2,9 +2,8 @@
  * Theme: Linear. Hairline borders, pill controls, ring-shadow cards, an inset
  * content panel on a tinted sidebar.
  *
- * Activate with <html data-kit-theme="linear">. Light lives on
- * :root[data-kit-theme], dark on :root.dark[data-kit-theme]. Load it after
- * kit-ui's theme.css; the selectors outrank kit-ui's :root blocks.
+ * Light lives on :root, dark on :root.dark. Load it after kit-ui's theme.css
+ * so these blocks win over kit-ui's by source order. No attribute needed.
  *
  * A theme file is the only place with palette and shape values.
  * components.css and primitives.css read these tokens and carry no look of
@@ -13,7 +12,7 @@
  * --brand-accent is the single editable brand color.
  */
 
-:root[data-kit-theme="linear"] {
+:root {
   color-scheme: light;
   /* Hairline borders, as in Linear. Safari and Firefox draw 0.5px on dense
      screens; Chrome rounds any border under 1px up to 1px. */
@@ -208,7 +207,7 @@
   scrollbar-gutter: stable;
 }
 
-:root.dark[data-kit-theme="linear"] {
+:root.dark {
   color-scheme: dark;
 
   --bg-sidebar: #19191c;
@@ -269,7 +268,7 @@
 /* Repeats kit-ui's handheld type scale (larger, so inputs do not zoom on
  * iOS), which the base block above would otherwise override by source order. */
 @media (hover: none) and (pointer: coarse) {
-  :root[data-kit-theme="linear"] {
+  :root {
     --font-size-2xs: 0.75rem;
     --font-size-xs: 0.875rem;
     --font-size-sm: 0.9375rem;
