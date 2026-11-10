@@ -98,6 +98,27 @@ All settings are environment variables.
 - `/mcp`: MCP server (search and read bookmarks)
 - `/healthz`, `/readyz`: health checks
 
+## Migrating from linkding
+
+`cmd/import-linkding` copies everything from a linkding instance through both
+REST APIs: bookmarks (active and archived, with their dates, tags, notes and
+read state), complete snapshots and uploaded files as archives (keeping their
+creation dates) and bundles as saved searches. Do a dry run first:
+
+```sh
+export LINKDING_TOKEN=... BOOKMARKS_TOKEN=...
+go run ./cmd/import-linkding \
+  --linkding-url https://linkding.example.com \
+  --bookmarks-url https://bookmarks.example.com \
+  --dry-run
+# then the same command without --dry-run
+```
+
+`--limit N` imports only the first N bookmarks and `--skip-assets` skips the
+archives. It prints one line per bookmark and exits 1 if anything failed.
+Re-running is safe and is how failures are retried: bookmarks merge by URL,
+archives already copied are skipped and saved searches are matched by name.
+
 ## Development
 
 Requires Go, Node, pnpm and [just](https://github.com/casey/just).
