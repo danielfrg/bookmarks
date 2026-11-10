@@ -16,11 +16,11 @@ import (
 const defaultFaviconProvider = "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url={url}&size=32"
 
 type Settings struct {
-	Addr, DataDir, DatabasePath, PublicURL, APIToken string
-	MCPAllowedHosts                                  []string
-	MaxUploadBytes                                   int64
-	FaviconProvider                                  string
-	AllowPrivateFetch                                bool
+	Addr, DataDir, DatabasePath, PublicURL string
+	MCPAllowedHosts                        []string
+	MaxUploadBytes                         int64
+	FaviconProvider                        string
+	AllowPrivateFetch                      bool
 }
 
 func env(name, fallback string) string {
@@ -46,19 +46,6 @@ func loadSettings() (Settings, error) {
 		return s, errors.New("BOOKMARKS_PUBLIC_URL must be an HTTP(S) origin without a path")
 	}
 	s.PublicURL = strings.TrimSuffix(s.PublicURL, "/")
-
-	token, tokenFile := os.Getenv("BOOKMARKS_API_TOKEN"), os.Getenv("BOOKMARKS_API_TOKEN_FILE")
-	if token != "" && tokenFile != "" {
-		return s, errors.New("set only one of BOOKMARKS_API_TOKEN and BOOKMARKS_API_TOKEN_FILE")
-	}
-	if tokenFile != "" {
-		data, err := os.ReadFile(tokenFile)
-		if err != nil {
-			return s, errors.New("BOOKMARKS_API_TOKEN_FILE: cannot read file")
-		}
-		token = strings.TrimSpace(string(data))
-	}
-	s.APIToken = token
 
 	hosts, err := mcp.ParseAllowedHosts(os.Getenv("BOOKMARKS_MCP_ALLOWED_HOSTS"))
 	if err != nil {

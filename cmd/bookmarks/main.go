@@ -58,7 +58,7 @@ func run(ctx context.Context, ready func(addr string)) error {
 		}
 	}()
 	handler := httpapi.NewHandler(assets, httpapi.Deps{
-		Ping: db.Ping, Service: svc, APIToken: settings.APIToken, MCPAllowedHosts: settings.MCPAllowedHosts,
+		Ping: db.Ping, Service: svc, MCPAllowedHosts: settings.MCPAllowedHosts,
 		MaxUploadBytes: settings.MaxUploadBytes, DataDir: settings.DataDir,
 	})
 

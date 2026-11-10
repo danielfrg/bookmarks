@@ -125,7 +125,7 @@ func tagsOrEmpty(t []string) []string {
 	return t
 }
 
-func NewHandler(svc *service.Service, allowedHosts []string, apiToken string) http.Handler {
+func NewHandler(svc *service.Service, allowedHosts []string) http.Handler {
 	server := sdk.NewServer(&sdk.Implementation{Name: "bookmarks", Title: "Bookmarks", Version: "0.1.0"}, &sdk.ServerOptions{Instructions: serverInstructions})
 
 	sdk.AddTool(server, &sdk.Tool{
@@ -238,5 +238,5 @@ func NewHandler(svc *service.Service, allowedHosts []string, apiToken string) ht
 		return nil, AddOutput{ID: b.ID, Created: created, URL: b.URL}, nil
 	})
 
-	return transport(server, allowedHosts, apiToken)
+	return transport(server, allowedHosts, svc)
 }

@@ -201,7 +201,8 @@ func (fakeCapturer) Capture(context.Context, string) (capture.Result, error) {
 }
 
 type fakeTarget struct {
-	srv *httptest.Server
+	srv   *httptest.Server
+	token string // a valid API token of the target
 
 	mu     sync.Mutex
 	writes []string // non-GET requests
@@ -218,8 +219,12 @@ func newTarget(t *testing.T) *fakeTarget {
 	svc := service.New(st, fetch.NewClient(fetch.Options{AllowPrivate: true}), fakeCapturer{}, noopQueue{}, service.Options{
 		DataDir: dir, MaxUploadBytes: 1 << 20, Logger: log.New(io.Discard, "", 0),
 	})
-	h := httpapi.NewHandler(fstest.MapFS{}, httpapi.Deps{Ping: st.Ping, Service: svc, APIToken: "t", MaxUploadBytes: 1 << 20, DataDir: dir})
-	tg := &fakeTarget{}
+	_, token, err := svc.CreateToken(context.Background(), "import")
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := httpapi.NewHandler(fstest.MapFS{}, httpapi.Deps{Ping: st.Ping, Service: svc, MaxUploadBytes: 1 << 20, DataDir: dir})
+	tg := &fakeTarget{token: token}
 	tg.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			tg.mu.Lock()
@@ -235,7 +240,7 @@ func newTarget(t *testing.T) *fakeTarget {
 func (tg *fakeTarget) get(t *testing.T, path string, v any) {
 	t.Helper()
 	req, _ := http.NewRequest(http.MethodGet, tg.srv.URL+path, nil)
-	req.Header.Set("Authorization", "Bearer t")
+	req.Header.Set("Authorization", "Bearer "+tg.token)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -316,7 +321,7 @@ func (tg *fakeTarget) archives(t *testing.T, id int64) []gotArchive {
 
 func runImport(t *testing.T, lk *fakeLinkding, tg *fakeTarget, mod ...func(*Config)) (Summary, string, error) {
 	t.Helper()
-	cfg := Config{LinkdingURL: lk.srv.URL, LinkdingToken: lkToken, BookmarksURL: tg.srv.URL, BookmarksToken: "t"}
+	cfg := Config{LinkdingURL: lk.srv.URL, LinkdingToken: lkToken, BookmarksURL: tg.srv.URL, BookmarksToken: tg.token}
 	for _, m := range mod {
 		m(&cfg)
 	}
@@ -569,7 +574,7 @@ func TestMigratesBundlesOnce(t *testing.T) {
 	}
 	// A saved search with the same name (different case) already exists.
 	req, _ := http.NewRequest(http.MethodPost, tg.srv.URL+"/api/saved-searches", strings.NewReader(`{"name":"existing","query":"keep"}`))
-	req.Header.Set("Authorization", "Bearer t")
+	req.Header.Set("Authorization", "Bearer "+tg.token)
 	req.Header.Set("Content-Type", "application/json")
 	if res, err := http.DefaultClient.Do(req); err != nil || res.StatusCode != 201 {
 		t.Fatal(err, res)

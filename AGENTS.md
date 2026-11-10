@@ -37,8 +37,10 @@ purpose; never commit them).
   interface; Postgres may replace SQLite later.
 - Routes: the REST API lives under `/api`, MCP at `/mcp`, files under `/archives`, `/favicons` and `/previews`, built frontend assets under `/assets`, and health checks at `/healthz` and `/readyz`. The index is `/` only; no SPA catch-all, unknown paths are 404.
 - The web UI has no auth (it runs behind Cloudflare Access / internal network).
-  External API clients use the bearer token. MCP is protected by the allowed-hosts
-  check only.
+  External API clients send an API token (`Bearer`/`Token`) created in Settings →
+  API; only its SHA-256 is stored and the plaintext is shown once. `/api/tokens`
+  is browser-only (bearer requests get 403). MCP is open on
+  its allowed hosts, but a token it is sent must verify.
 - MCP and the HTTP API share one service layer and validation.
 - Agents get reader text (paged markdown), never raw archive HTML.
 - Server-side fetches must block non-public addresses.

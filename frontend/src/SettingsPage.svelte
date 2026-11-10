@@ -6,9 +6,13 @@
     SettingsLayout,
     SettingsSection,
     Spinner,
+    TextInput,
     Toggle,
+    formatRelativeTime,
+    formatTimestamp,
   } from "@kenn-io/kit-ui";
-  import { api, type Settings } from "./lib/api.ts";
+  import { tick } from "svelte";
+  import { api, type ApiToken, type CreatedApiToken, type Settings } from "./lib/api.ts";
   import {
     clampItemsPerPage,
     mergeSettings,
@@ -164,6 +168,98 @@
   }
 
   const mcpURL = `${window.location.origin}/mcp`;
+
+  // ---- API tokens ----
+  const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+  let tokens = $state<ApiToken[] | null>(null);
+  let tokensError = $state("");
+  let tokenName = $state("");
+  let tokenBusy = $state(false);
+  let tokenActionError = $state("");
+  let newToken = $state<CreatedApiToken | null>(null);
+  let deletingToken = $state<number | null>(null);
+
+  // Only the newest list request may update the list, so a slow first load
+  // can't overwrite the list fetched after a create.
+  let tokensSeq = 0;
+  async function loadTokens() {
+    const seq = ++tokensSeq;
+    try {
+      const list = await api.tokens();
+      if (seq === tokensSeq) {
+        tokens = list;
+        tokensError = "";
+      }
+    } catch (e) {
+      if (seq === tokensSeq) tokensError = errorText(e);
+    }
+  }
+  // Load the tokens the first time the API category is shown.
+  let tokensRequested = false;
+  $effect(() => {
+    if (active !== "api" || tokensRequested) return;
+    tokensRequested = true;
+    void loadTokens();
+  });
+  function retryTokens() {
+    tokensError = "";
+    tokens = null;
+    void loadTokens();
+  }
+
+  async function focusSel(sel: string) {
+    await tick();
+    document.querySelector<HTMLElement>(sel)?.focus();
+  }
+
+  async function createToken() {
+    const name = tokenName.trim();
+    if (!name || tokenBusy) return;
+    tokenBusy = true;
+    tokenActionError = "";
+    deletingToken = null;
+    try {
+      const created = await api.createToken(name);
+      newToken = created;
+      tokenName = "";
+      void focusSel(".new-token-copy");
+      await loadTokens();
+    } catch (e) {
+      tokenActionError = errorText(e);
+    } finally {
+      tokenBusy = false;
+    }
+  }
+  function dismissNewToken() {
+    newToken = null;
+    void focusSel("#token-name");
+  }
+  function startDeleteToken(t: ApiToken) {
+    tokenActionError = "";
+    deletingToken = t.id;
+    void focusSel(".token-confirm-cancel");
+  }
+  function cancelDeleteToken() {
+    const id = deletingToken;
+    deletingToken = null;
+    if (id !== null) void focusSel(`.token-delete-${id}`);
+  }
+  async function deleteToken(t: ApiToken) {
+    if (tokenBusy) return;
+    tokenBusy = true;
+    tokenActionError = "";
+    try {
+      await api.deleteToken(t.id);
+      deletingToken = null;
+      tokens = (tokens ?? []).filter((x) => x.id !== t.id);
+      if (newToken?.id === t.id) newToken = null;
+      void focusSel("#token-name");
+    } catch (e) {
+      tokenActionError = errorText(e);
+    } finally {
+      tokenBusy = false;
+    }
+  }
 </script>
 
 <main class="main page settings-page">
@@ -296,18 +392,130 @@
             </div>
           </SettingsSection>
         {:else if id === "api"}
-          <SettingsSection title="API">
+          <SettingsSection
+            title="API"
+            description="Tokens let the browser extension, the linkding importer and other apps use the API and MCP."
+          >
             <div class="setting stacked">
               <p class="small">
-                The API token is set with <code class="mono">BOOKMARKS_API_TOKEN</code> on the server.
+                Send a token as <code class="mono">Authorization: Bearer &lt;token&gt;</code>.
+                Deleting a token stops every app that uses it.
               </p>
               <p class="small">
                 API docs: <a href="/api/docs" target="_blank" rel="noreferrer">/api/docs</a>
               </p>
-              <p class="small">
+              <p class="small with-copy">
                 MCP: <a class="mono" href="/mcp">{mcpURL}</a>
                 <CopyButton text={mcpURL} ariaLabel="Copy MCP URL" title="Copy MCP URL" />
               </p>
+            </div>
+
+            {#if newToken}
+              <div class="setting stacked new-token">
+                <span class="label">New token “{newToken.name}”</span>
+                <div class="new-token-value">
+                  <code class="mono">{newToken.token}</code>
+                  <CopyButton
+                    class="new-token-copy"
+                    text={newToken.token}
+                    ariaLabel="Copy token"
+                    title="Copy token"
+                  />
+                </div>
+                <p class="small" role="status">Copy this token now — it won't be shown again.</p>
+                <div>
+                  <Button size="sm" onclick={dismissNewToken}>Done</Button>
+                </div>
+              </div>
+            {/if}
+
+            <div class="setting stacked">
+              <label for="token-name">Create token</label>
+              <form
+                class="token-create"
+                onsubmit={(e) => {
+                  e.preventDefault();
+                  void createToken();
+                }}
+              >
+                <TextInput
+                  id="token-name"
+                  placeholder="Name, e.g. Chrome extension"
+                  bind:value={tokenName}
+                  disabled={tokenBusy}
+                  autocomplete="off"
+                />
+                <Button
+                  type="submit"
+                  tone="info"
+                  surface="solid"
+                  disabled={tokenBusy || !tokenName.trim()}>Create token</Button
+                >
+              </form>
+              {#if tokenActionError}<p class="notice error" role="alert">{tokenActionError}</p>{/if}
+            </div>
+
+            <div class="setting stacked">
+              <span class="label">Tokens</span>
+              {#if tokensError}
+                <p class="notice error" role="alert">{tokensError}</p>
+                <div><Button size="sm" onclick={retryTokens}>Retry</Button></div>
+              {:else if tokens === null}
+                <span class="small muted"
+                  ><Spinner size={12} label="Loading tokens" /> Loading…</span
+                >
+              {:else if tokens.length === 0}
+                <p class="small muted">No tokens yet.</p>
+              {:else}
+                <ul class="saved-rows token-rows">
+                  {#each tokens as t (t.id)}
+                    <li class="saved-row">
+                      <div class="saved-main">
+                        <span class="token-name">{t.name}</span>
+                        <span class="small muted">
+                          <code class="mono">bk_{t.prefix}…</code>
+                          · created
+                          <span title={formatTimestamp(t.created_at)}
+                            >{formatRelativeTime(t.created_at)}</span
+                          >
+                          · last used
+                          {#if t.last_used_at}<span title={formatTimestamp(t.last_used_at)}
+                              >{formatRelativeTime(t.last_used_at)}</span
+                            >{:else}never{/if}
+                        </span>
+                      </div>
+                      <span class="row-actions">
+                        {#if deletingToken === t.id}
+                          <span class="small confirm-inline"
+                            >Delete {t.name}? Apps using it stop working.</span
+                          >
+                          <Button
+                            class="token-confirm-cancel"
+                            size="sm"
+                            disabled={tokenBusy}
+                            onclick={cancelDeleteToken}>Cancel</Button
+                          >
+                          <Button
+                            size="sm"
+                            tone="danger"
+                            surface="solid"
+                            disabled={tokenBusy}
+                            onclick={() => deleteToken(t)}>Delete</Button
+                          >
+                        {:else}
+                          <Button
+                            size="sm"
+                            tone="danger"
+                            class="token-delete-{t.id}"
+                            disabled={tokenBusy}
+                            onclick={() => startDeleteToken(t)}>Delete</Button
+                          >
+                        {/if}
+                      </span>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
             </div>
           </SettingsSection>
         {/if}

@@ -28,7 +28,7 @@ func (e *testEnv) upload(path, ctype string, body *strings.Reader, bearer bool) 
 	r := httptest.NewRequest("POST", path, body)
 	r.Header.Set("Content-Type", ctype)
 	if bearer {
-		r.Header.Set("Authorization", "Bearer "+testToken)
+		r.Header.Set("Authorization", "Bearer "+e.token)
 	} else {
 		r.Header.Set("X-Bookmarks", "1")
 	}

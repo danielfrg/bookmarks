@@ -15,11 +15,10 @@ import (
 )
 
 // Deps are the dependencies of the HTTP handler. MCPAllowedHosts extends the hosts
-// the MCP endpoint accepts.
+// the MCP endpoint accepts. API tokens are verified through Service.
 type Deps struct {
 	Ping            func(context.Context) error
 	Service         *service.Service
-	APIToken        string
 	MCPAllowedHosts []string
 	MaxUploadBytes  int64
 	DataDir         string // favicons and previews live in DataDir/favicons and DataDir/previews
@@ -39,6 +38,7 @@ func NewHandler(assets fs.FS, deps Deps) http.Handler {
 	registerSavedSearches(api, deps.Service)
 	registerSettings(api, deps.Service)
 	registerBulk(api, deps.Service)
+	registerTokens(api, deps.Service)
 	mux.HandleFunc("POST /api/import/netscape", importNetscape(deps.Service))
 	mux.HandleFunc("GET /api/export/netscape", exportNetscape(deps.Service))
 	mux.HandleFunc("POST /api/bookmarks/{id}/archives", uploadArchive(deps.Service))
@@ -54,10 +54,10 @@ func NewHandler(assets fs.FS, deps Deps) http.Handler {
 		}
 		_, _ = io.WriteString(w, "ok\n")
 	})
-	mux.Handle("/mcp", mcp.NewHandler(deps.Service, deps.MCPAllowedHosts, deps.APIToken))
+	mux.Handle("/mcp", mcp.NewHandler(deps.Service, deps.MCPAllowedHosts))
 	mux.Handle("GET /assets/", web.Handler(assets))
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) { web.Index(w, r, assets, http.StatusOK) })
-	guarded := protectAPI(mux, deps.APIToken, deps.MaxUploadBytes)
+	guarded := protectAPI(mux, deps.Service, deps.MaxUploadBytes)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {

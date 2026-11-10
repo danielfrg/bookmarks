@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"net/http"
 	"testing"
 )
@@ -21,7 +22,7 @@ func TestParseAllowedHosts(t *testing.T) {
 }
 
 func TestProtectRejectsUnknownHost(t *testing.T) {
-	e := newEnv(t, "")
+	e := newEnv(t)
 	if r := post(t, e.srv.URL, "evil.example", ""); r.StatusCode != 403 {
 		t.Fatalf("status %d", r.StatusCode)
 	}
@@ -38,20 +39,32 @@ func TestProtectRejectsUnknownHost(t *testing.T) {
 	}
 }
 
-func TestBadBearerRejected(t *testing.T) {
-	e := newEnv(t, "good")
-	for _, auth := range []string{"Bearer bad", "Token bad", "Bearer "} {
+func TestBearerMustVerify(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	_, good, err := e.svc.CreateToken(ctx, "mcp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, gone, err := e.svc.CreateToken(ctx, "gone")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.svc.DeleteToken(ctx, info.ID); err != nil {
+		t.Fatal(err)
+	}
+	for _, auth := range []string{"Bearer bad", "Token bad", "Bearer ", "Bearer " + gone} {
 		if r := post(t, e.srv.URL, "", auth); r.StatusCode != 401 {
 			t.Errorf("%q: status %d", auth, r.StatusCode)
 		}
 	}
-	for _, auth := range []string{"Bearer good", "token good", "", "Basic Zm9v"} {
+	for _, auth := range []string{"Bearer " + good, "token " + good, "", "Basic Zm9v"} {
 		if r := post(t, e.srv.URL, "", auth); r.StatusCode != 200 {
 			t.Errorf("%q: status %d", auth, r.StatusCode)
 		}
 	}
-	open := newEnv(t, "")
-	if r := post(t, open.srv.URL, "", "Bearer anything"); r.StatusCode != 401 {
-		t.Fatalf("no configured token: status %d", r.StatusCode)
+	e.st.Close()
+	if r := post(t, e.srv.URL, "", "Bearer "+good); r.StatusCode != 503 {
+		t.Fatalf("store down: status %d", r.StatusCode)
 	}
 }

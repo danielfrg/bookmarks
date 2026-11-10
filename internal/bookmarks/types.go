@@ -88,6 +88,17 @@ type SavedSearch struct {
 	DateModified time.Time
 }
 
+// APIToken is a stored API token. The plaintext is never stored: TokenHash is
+// the hex SHA-256 of the full token and Prefix the start of its random part.
+type APIToken struct {
+	ID         int64
+	Name       string
+	TokenHash  string
+	Prefix     string
+	CreatedAt  time.Time
+	LastUsedAt *time.Time
+}
+
 type Settings struct {
 	FaviconsEnabled bool
 	PreviewsEnabled bool

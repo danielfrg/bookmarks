@@ -32,11 +32,14 @@ func articleHTML() string {
 		body.String() + ` The ` + uniqueWord + ` is mentioned only here.</p></article></body></html>`
 }
 
-type bearer struct{ next http.RoundTripper }
+type bearer struct {
+	token string
+	next  http.RoundTripper
+}
 
 func (b bearer) RoundTrip(r *http.Request) (*http.Response, error) {
 	r = r.Clone(r.Context())
-	r.Header.Set("Authorization", "Bearer t")
+	r.Header.Set("Authorization", "Bearer "+b.token)
 	return b.next.RoundTrip(r)
 }
 
@@ -54,7 +57,6 @@ func TestEndToEnd(t *testing.T) {
 	defer site.Close()
 	t.Setenv("BOOKMARKS_ADDR", "127.0.0.1:0")
 	t.Setenv("BOOKMARKS_DATA_DIR", t.TempDir())
-	t.Setenv("BOOKMARKS_API_TOKEN", "t")
 	t.Setenv("BOOKMARKS_ALLOW_PRIVATE_FETCH", "true")
 	t.Setenv("BOOKMARKS_FAVICON_PROVIDER", site.URL+"/favicon?u={url}")
 
@@ -73,7 +75,39 @@ func TestEndToEnd(t *testing.T) {
 		t.Fatal("server did not start")
 	}
 
-	client := &http.Client{Transport: bearer{http.DefaultTransport}, Timeout: 10 * time.Second}
+	// Mint an API token the way the web UI does, then use it for everything else.
+	req, err := http.NewRequest("POST", base+"/api/tokens", strings.NewReader(`{"name":"e2e"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Bookmarks", "1")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var minted struct {
+		Token string `json:"token"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&minted)
+	resp.Body.Close()
+	if err != nil || resp.StatusCode != 201 || !strings.HasPrefix(minted.Token, "bk_") {
+		t.Fatalf("create token: %d %v %+v", resp.StatusCode, err, minted)
+	}
+	client := &http.Client{Transport: bearer{minted.Token, http.DefaultTransport}, Timeout: 10 * time.Second}
+	if status, data := func() (int, []byte) {
+		req, _ := http.NewRequest("GET", base+"/api/bookmarks", nil)
+		req.Header.Set("Authorization", "Bearer bk_wrong")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		data, _ := io.ReadAll(resp.Body)
+		return resp.StatusCode, data
+	}(); status != 401 {
+		t.Fatalf("wrong token: %d %s", status, data)
+	}
 	do := func(method, path, contentType string, body io.Reader) (int, []byte) {
 		t.Helper()
 		req, err := http.NewRequest(method, base+path, body)

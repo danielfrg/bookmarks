@@ -2,10 +2,16 @@
 package auth
 
 import (
-	"crypto/sha256"
-	"crypto/subtle"
+	"context"
 	"strings"
 )
+
+// Verifier checks a presented API token. Unknown tokens are (false, nil); err
+// is set only when verification itself failed (e.g. the database is down).
+// *service.Service implements it.
+type Verifier interface {
+	VerifyToken(ctx context.Context, token string) (bool, error)
+}
 
 // TokenFromHeader extracts the token of an "Authorization: Bearer <t>" or
 // "Authorization: Token <t>" header; the scheme is case-insensitive. Other
@@ -16,13 +22,4 @@ func TokenFromHeader(h string) (tok string, ok bool) {
 		return "", false
 	}
 	return strings.TrimSpace(rest), true
-}
-
-// Equal compares tokens in constant time. An empty token never matches.
-func Equal(a, b string) bool {
-	if a == "" || b == "" {
-		return false
-	}
-	x, y := sha256.Sum256([]byte(a)), sha256.Sum256([]byte(b))
-	return subtle.ConstantTimeCompare(x[:], y[:]) == 1
 }

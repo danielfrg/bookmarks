@@ -35,7 +35,7 @@ type env struct {
 	srv *httptest.Server
 }
 
-func newEnv(t *testing.T, token string) *env {
+func newEnv(t *testing.T) *env {
 	t.Helper()
 	dir := t.TempDir()
 	st, err := store.Open(filepath.Join(dir, "bookmarks.db"))
@@ -46,7 +46,7 @@ func newEnv(t *testing.T, token string) *env {
 	svc := service.New(st, fetch.NewClient(fetch.Options{AllowPrivate: true}), fakeCapturer{}, noopQueue{}, service.Options{
 		DataDir: dir, Logger: log.New(io.Discard, "", 0),
 	})
-	srv := httptest.NewServer(NewHandler(svc, nil, token))
+	srv := httptest.NewServer(NewHandler(svc, nil))
 	t.Cleanup(srv.Close)
 	return &env{svc: svc, st: st, srv: srv}
 }

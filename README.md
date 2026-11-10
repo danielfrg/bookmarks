@@ -85,8 +85,6 @@ All settings are environment variables.
 | `BOOKMARKS_ADDR` | `127.0.0.1:8080` | Address to listen on |
 | `BOOKMARKS_DATA_DIR` | `./data` | Data directory; the database is `<DATA_DIR>/bookmarks.db` |
 | `BOOKMARKS_PUBLIC_URL` | `http://127.0.0.1:8080` | Public origin of the app (no path) |
-| `BOOKMARKS_API_TOKEN` | unset | Token accepted as `Authorization: Bearer <token>` by the API and MCP |
-| `BOOKMARKS_API_TOKEN_FILE` | unset | Read the API token from this file (not together with `API_TOKEN`) |
 | `BOOKMARKS_MCP_ALLOWED_HOSTS` | unset | Extra comma-separated hostnames the MCP endpoint accepts (localhost is always allowed) |
 | `BOOKMARKS_MAX_UPLOAD_MB` | `100` | Maximum uncompressed archive size, in MB |
 | `BOOKMARKS_FAVICON_PROVIDER` | Google favicon service | Favicon URL template containing `{url}` |
@@ -98,12 +96,27 @@ All settings are environment variables.
 - `/mcp`: MCP server (search and read bookmarks)
 - `/healthz`, `/readyz`: health checks
 
+## API tokens
+
+Create API tokens in the web UI under **Settings → API**: give each app its own
+named token (the Chrome extension, `import-linkding`, an agent). The full token
+(`bk_…`) is shown once, when it is created; the server stores only its hash.
+Clients send it as `Authorization: Bearer <token>` (linkding's
+`Authorization: Token <token>` also works). Deleting a token revokes it
+immediately. Tokens can only be managed from the web UI: `/api/tokens`
+rejects requests that carry a token.
+
+The web UI itself needs no token (put the app behind your own access control).
+MCP is open on its allowed hosts; a request that does send a token must send a
+valid one.
+
 ## Migrating from linkding
 
 `cmd/import-linkding` copies everything from a linkding instance through both
 REST APIs: bookmarks (active and archived, with their dates, tags, notes and
 read state), complete snapshots and uploaded files as archives (keeping their
-creation dates) and bundles as saved searches. Do a dry run first:
+creation dates) and bundles as saved searches. `BOOKMARKS_TOKEN` is an API
+token created in Settings → API. Do a dry run first:
 
 ```sh
 export LINKDING_TOKEN=... BOOKMARKS_TOKEN=...

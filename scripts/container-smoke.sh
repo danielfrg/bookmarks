@@ -25,7 +25,7 @@ start_server() {
   containers+=("$server_name")
   docker run -d --name "$server_name" --read-only --tmpfs /tmp \
     -p "127.0.0.1:$listen_port:8080" -v "$data_volume:/data" \
-    -e "BOOKMARKS_PUBLIC_URL=$smoke_base" -e BOOKMARKS_API_TOKEN=smoke "$image_ref" >/dev/null
+    -e "BOOKMARKS_PUBLIC_URL=$smoke_base" "$image_ref" >/dev/null
   for _ in {1..60}; do
     if curl --fail --silent "$smoke_base/readyz" >/dev/null; then return; fi
     sleep .2
@@ -34,7 +34,7 @@ start_server() {
   return 1
 }
 request() {
-  curl --fail --silent -H 'Authorization: Bearer smoke' "$@"
+  curl --fail --silent -H "Authorization: Bearer $api_token" "$@"
 }
 new_volume data; data_volume=$smoke_volume
 start_server data "$data_volume"; base=$smoke_base
@@ -50,6 +50,12 @@ print(asset.group(1))
 PY
 curl --fail --silent "$base$(cat "$smoke_dir/asset")" >/dev/null
 curl --fail --silent "$base/api/docs" >/dev/null
+
+# Mint an API token through the web UI's path (curl sends no Origin).
+curl --fail --silent -H 'X-Bookmarks: 1' -H 'Content-Type: application/json' \
+  -d '{"name":"smoke"}' "$base/api/tokens" > "$smoke_dir/token.json"
+api_token=$(python3 -c 'import json,sys;t=json.load(open(sys.argv[1]))["token"];assert t.startswith("bk_");print(t)' "$smoke_dir/token.json")
+[[ $(curl --silent -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer bk_wrong' "$base/api/bookmarks") == 401 ]]
 
 request -H 'Content-Type: application/json' \
   -d '{"url":"https://example.org/smoke","title":"Smoke","tags":["smoke"]}' \
@@ -78,4 +84,4 @@ verify_data "$base"
 docker rm -f "bookmarks-smoke-${smoke_suffix}-data" >/dev/null
 start_server data "$data_volume"; base=$smoke_base
 verify_data "$base"
-printf 'Container verified: embedded UI, API, nonroot storage and restart persistence.\n'
+printf 'Container verified: embedded UI, API tokens, API, nonroot storage and restart persistence.\n'

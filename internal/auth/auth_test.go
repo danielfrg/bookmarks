@@ -21,9 +21,3 @@ func TestTokenFromHeader(t *testing.T) {
 		}
 	}
 }
-
-func TestEqual(t *testing.T) {
-	if !Equal("a", "a") || Equal("a", "b") || Equal("", "") || Equal("a", "") || Equal("", "a") {
-		t.Fatal("Equal misbehaves")
-	}
-}

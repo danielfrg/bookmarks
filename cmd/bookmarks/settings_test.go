@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 )
@@ -9,8 +8,8 @@ import (
 func clearEnv(t *testing.T) {
 	t.Helper()
 	for _, name := range []string{
-		"BOOKMARKS_ADDR", "BOOKMARKS_DATA_DIR", "BOOKMARKS_PUBLIC_URL", "BOOKMARKS_API_TOKEN",
-		"BOOKMARKS_API_TOKEN_FILE", "BOOKMARKS_MCP_ALLOWED_HOSTS", "BOOKMARKS_MAX_UPLOAD_MB",
+		"BOOKMARKS_ADDR", "BOOKMARKS_DATA_DIR", "BOOKMARKS_PUBLIC_URL",
+		"BOOKMARKS_MCP_ALLOWED_HOSTS", "BOOKMARKS_MAX_UPLOAD_MB",
 		"BOOKMARKS_FAVICON_PROVIDER", "BOOKMARKS_ALLOW_PRIVATE_FETCH",
 	} {
 		t.Setenv(name, "")
@@ -28,23 +27,6 @@ func TestLoadSettingsDefaults(t *testing.T) {
 	}
 	if s.PublicURL != "http://127.0.0.1:8080" || s.AllowPrivateFetch || s.FaviconProvider == "" {
 		t.Fatalf("%+v", s)
-	}
-}
-
-func TestLoadSettingsTokenFile(t *testing.T) {
-	clearEnv(t)
-	path := filepath.Join(t.TempDir(), "token")
-	if err := os.WriteFile(path, []byte("secret\n"), 0600); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("BOOKMARKS_API_TOKEN_FILE", path)
-	s, err := loadSettings()
-	if err != nil || s.APIToken != "secret" {
-		t.Fatalf("%+v %v", s, err)
-	}
-	t.Setenv("BOOKMARKS_API_TOKEN", "other")
-	if _, err := loadSettings(); err == nil {
-		t.Fatal("accepted both token and token file")
 	}
 }
 

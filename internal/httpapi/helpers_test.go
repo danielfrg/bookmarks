@@ -20,8 +20,6 @@ import (
 	"github.com/danielfrg/bookmarks/internal/store"
 )
 
-const testToken = "s3cret-token"
-
 type noopQueue struct{}
 
 func (noopQueue) Enqueue(context.Context, jobs.Kind, int64) error { return nil }
@@ -33,16 +31,16 @@ func (fakeCapturer) Capture(context.Context, string) (capture.Result, error) {
 }
 
 type testEnv struct {
-	h   http.Handler
-	dir string
-	svc *service.Service
-	st  *store.SQLite
+	h     http.Handler
+	dir   string
+	svc   *service.Service
+	st    *store.SQLite
+	token string // a valid API token
 }
 
 // envOpts tweaks the test environment.
 type envOpts struct {
 	maxUpload int64 // service and handler upload limit; default 1 MiB
-	noToken   bool
 }
 
 func newTestEnv(t *testing.T, opts ...func(*envOpts)) *testEnv {
@@ -60,11 +58,12 @@ func newTestEnv(t *testing.T, opts ...func(*envOpts)) *testEnv {
 	svc := service.New(st, fetch.NewClient(fetch.Options{AllowPrivate: true}), fakeCapturer{}, noopQueue{}, service.Options{
 		DataDir: dir, MaxUploadBytes: o.maxUpload, Logger: log.New(io.Discard, "", 0),
 	})
-	deps := Deps{Ping: st.Ping, Service: svc, APIToken: testToken, MaxUploadBytes: o.maxUpload, DataDir: dir}
-	if o.noToken {
-		deps.APIToken = ""
+	_, token, err := svc.CreateToken(context.Background(), "test")
+	if err != nil {
+		t.Fatal(err)
 	}
-	return &testEnv{h: NewHandler(fstest.MapFS{}, deps), dir: dir, svc: svc, st: st}
+	deps := Deps{Ping: st.Ping, Service: svc, MaxUploadBytes: o.maxUpload, DataDir: dir}
+	return &testEnv{h: NewHandler(fstest.MapFS{}, deps), dir: dir, svc: svc, st: st, token: token}
 }
 
 // do sends a request with the browser-style write headers (X-Bookmarks).

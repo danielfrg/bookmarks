@@ -108,6 +108,19 @@ export interface BulkRequest {
   action: BulkAction;
   tags?: string[];
 }
+/** An API token as listed; the secret itself is never returned again. */
+export interface ApiToken {
+  id: number;
+  name: string;
+  /** First characters after `bk_`, for recognizing the token. */
+  prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+}
+/** The create response: the only time the full token is available. */
+export interface CreatedApiToken extends ApiToken {
+  token: string;
+}
 export interface ImportResult {
   created: number;
   updated: number;
@@ -248,4 +261,8 @@ export const api = {
     return requestJSON<ImportResult>(`${base}/import/netscape`, { method: "POST", body: form });
   },
   exportURL: `${base}/export/netscape`,
+  tokens: () => requestJSON<ApiToken[]>(`${base}/tokens`),
+  createToken: (name: string) =>
+    requestJSON<CreatedApiToken>(`${base}/tokens`, { method: "POST", body: body({ name }) }),
+  deleteToken: (id: number) => requestJSON<void>(`${base}/tokens/${id}`, { method: "DELETE" }),
 };

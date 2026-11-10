@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -74,9 +75,9 @@ func requestHost(authority string) (string, bool) {
 }
 
 // protect checks the host and origin, allows only POST and, when the request
-// carries a Bearer/Token Authorization header, requires it to match apiToken
-// (so an unset token rejects every bearer). Requests without one stay open.
-func protect(next http.Handler, hosts []string, apiToken string) http.Handler {
+// carries a Bearer/Token Authorization header, requires the token to verify.
+// Requests without one stay open.
+func protect(next http.Handler, hosts []string, tokens auth.Verifier) http.Handler {
 	allowed := map[string]bool{"localhost": true, "127.0.0.1": true, "::1": true}
 	for _, host := range hosts {
 		allowed[strings.ToLower(strings.Trim(host, "[]"))] = true
@@ -99,9 +100,17 @@ func protect(next http.Handler, hosts []string, apiToken string) http.Handler {
 				return
 			}
 		}
-		if token, ok := auth.TokenFromHeader(r.Header.Get("Authorization")); ok && !auth.Equal(token, apiToken) {
-			http.Error(w, "Invalid API token", 401)
-			return
+		if token, ok := auth.TokenFromHeader(r.Header.Get("Authorization")); ok {
+			valid, err := tokens.VerifyToken(r.Context(), token)
+			if err != nil {
+				log.Printf("mcp: verify API token: %v", err)
+				http.Error(w, "Could not verify API token", 503)
+				return
+			}
+			if !valid {
+				http.Error(w, "Invalid API token", 401)
+				return
+			}
 		}
 		if r.Method != http.MethodPost {
 			w.Header().Set("Allow", "POST")
@@ -111,6 +120,6 @@ func protect(next http.Handler, hosts []string, apiToken string) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-func transport(server *sdk.Server, hosts []string, apiToken string) http.Handler {
-	return protect(sdk.NewStreamableHTTPHandler(func(*http.Request) *sdk.Server { return server }, &sdk.StreamableHTTPOptions{Stateless: true, JSONResponse: true, DisableLocalhostProtection: true, PropagateRequestCancellation: true, MaxRequestBodyBytes: 1 << 20}), hosts, apiToken)
+func transport(server *sdk.Server, hosts []string, tokens auth.Verifier) http.Handler {
+	return protect(sdk.NewStreamableHTTPHandler(func(*http.Request) *sdk.Server { return server }, &sdk.StreamableHTTPOptions{Stateless: true, JSONResponse: true, DisableLocalhostProtection: true, PropagateRequestCancellation: true, MaxRequestBodyBytes: 1 << 20}), hosts, tokens)
 }

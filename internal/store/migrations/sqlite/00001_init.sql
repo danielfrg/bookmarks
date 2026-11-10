@@ -83,12 +83,24 @@ CREATE TABLE jobs (
 );
 CREATE INDEX idx_jobs_status_run_at ON jobs(status, run_at);
 
+-- API tokens for external clients. Only the SHA-256 of a token is stored;
+-- prefix is the start of its random part, shown in the UI.
+CREATE TABLE api_tokens (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    name         TEXT NOT NULL,
+    token_hash   TEXT NOT NULL UNIQUE,
+    prefix       TEXT NOT NULL,
+    created_at   TEXT NOT NULL,
+    last_used_at TEXT
+);
+
 -- Full-text index; rowid = bookmark id. Rows are written by the store's reindex
 -- (no triggers: tags and reader text live in other tables).
 CREATE VIRTUAL TABLE bookmarks_fts USING fts5(title, description, notes, url, tags, reader, tokenize='unicode61 remove_diacritics 2');
 
 -- +goose Down
 DROP TABLE bookmarks_fts;
+DROP TABLE api_tokens;
 DROP TABLE jobs;
 DROP TABLE settings;
 DROP TABLE saved_searches;

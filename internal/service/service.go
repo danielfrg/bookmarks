@@ -50,6 +50,12 @@ type Store interface {
 
 	GetSettings(ctx context.Context) (bookmarks.Settings, error)
 	PutSettings(ctx context.Context, v bookmarks.Settings) error
+
+	CreateAPIToken(ctx context.Context, t *bookmarks.APIToken) error
+	ListAPITokens(ctx context.Context) ([]bookmarks.APIToken, error)
+	DeleteAPIToken(ctx context.Context, id int64) error
+	FindAPITokenByHash(ctx context.Context, hash string) (bookmarks.APIToken, error)
+	TouchAPIToken(ctx context.Context, id int64, at time.Time) error
 }
 
 var _ Store = (*store.SQLite)(nil)

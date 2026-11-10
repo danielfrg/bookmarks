@@ -1063,3 +1063,50 @@ td.row-actions > * {
     display: none;
   }
 }
+
+/* Settings → API: tokens. */
+.settings-page .token-create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.settings-page .new-token {
+  padding: 0.75rem;
+  border: 1px solid var(--accent-blue);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent-blue) 8%, transparent);
+}
+.settings-page .new-token-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.settings-page .new-token-value code {
+  flex: 1;
+  min-width: 0;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.settings-page .token-name {
+  overflow-wrap: anywhere;
+}
+.settings-page .setting .notice.error {
+  margin: 0;
+}
+/* kit-ui's CopyButton is display:flex; keep it on the line of its text. */
+.settings-page .setting p.with-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+.settings-page .setting p.with-copy a {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

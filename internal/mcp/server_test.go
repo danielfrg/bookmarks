@@ -12,7 +12,7 @@ import (
 )
 
 func TestInstructionsPresent(t *testing.T) {
-	e := newEnv(t, "")
+	e := newEnv(t)
 	s := e.session(t)
 	got := s.InitializeResult().Instructions
 	if !strings.HasPrefix(got, "Bookmarks is Daniel's personal bookmark library") || !strings.Contains(got, "Use add_bookmark only when asked to save a link.") {
@@ -25,7 +25,7 @@ func TestInstructionsPresent(t *testing.T) {
 }
 
 func TestSearchBookmarksTool(t *testing.T) {
-	e := newEnv(t, "")
+	e := newEnv(t)
 	e.seed(t, "https://a.example/", "Sourdough", []string{"food"}, "Feed the starter with flour and water every day.")
 	e.seed(t, "https://b.example/", "Other", nil, "nothing relevant")
 	s := e.session(t)
@@ -57,7 +57,7 @@ func TestSearchBookmarksTool(t *testing.T) {
 }
 
 func TestSearchBookmarksValidation(t *testing.T) {
-	e := newEnv(t, "")
+	e := newEnv(t)
 	s := e.session(t)
 	_, res := call(t, s, "search_bookmarks", map[string]any{"query": "x", "scope": "nope"})
 	if res == nil || !res.IsError || !strings.Contains(errText(res), "scope") {
@@ -74,7 +74,7 @@ func TestSearchBookmarksValidation(t *testing.T) {
 }
 
 func TestReadBookmarkPaging(t *testing.T) {
-	e := newEnv(t, "")
+	e := newEnv(t)
 	text := strings.Repeat("alpha beta gamma. ", 20) + "\n\n" + strings.Repeat("delta epsilon. ", 20)
 	id := e.seed(t, "https://a.example/", "Long", []string{"x"}, text)
 	s := e.session(t)
@@ -104,7 +104,7 @@ func TestReadBookmarkPaging(t *testing.T) {
 }
 
 func TestReadBookmarkWithoutReaderText(t *testing.T) {
-	e := newEnv(t, "")
+	e := newEnv(t)
 	id := e.seed(t, "https://a.example/", "Bare", nil, "")
 	s := e.session(t)
 	_, res := call(t, s, "read_bookmark", map[string]any{"id": id})
@@ -121,7 +121,7 @@ func TestReadBookmarkWithoutReaderText(t *testing.T) {
 }
 
 func TestListTagsTool(t *testing.T) {
-	e := newEnv(t, "")
+	e := newEnv(t)
 	e.seed(t, "https://a.example/", "A", []string{"go", "web"}, "")
 	e.seed(t, "https://b.example/", "B", []string{"go"}, "")
 	out, _ := call(t, e.session(t), "list_tags", nil)
@@ -137,7 +137,7 @@ func TestListTagsTool(t *testing.T) {
 }
 
 func TestAddBookmarkTool(t *testing.T) {
-	e := newEnv(t, "")
+	e := newEnv(t)
 	s := e.session(t)
 	args := map[string]any{"url": "https://new.example/x", "title": "New", "tags": []string{"Go", "web"}, "notes": "n"}
 	out, _ := call(t, s, "add_bookmark", args)
@@ -163,7 +163,7 @@ func TestAddBookmarkTool(t *testing.T) {
 }
 
 func TestReadBookmarkFailedReader(t *testing.T) {
-	e := newEnv(t, "")
+	e := newEnv(t)
 	id := e.seed(t, "https://a.example/", "Broken", nil, "")
 	err := e.st.PutReaderText(context.Background(), bookmarks.ReaderText{BookmarkID: id, Status: bookmarks.ReaderFailed, Error: "no readable content"})
 	if err != nil {

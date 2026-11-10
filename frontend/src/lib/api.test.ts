@@ -229,3 +229,45 @@ test("routes and verbs match the server", async () => {
   );
   assert.equal(api.exportURL, "/api/export/netscape");
 });
+
+test("API token client: list, create and delete", async () => {
+  const listed = [
+    {
+      id: 2,
+      name: "CLI",
+      prefix: "abcdefgh",
+      created_at: "2026-11-09T12:00:00Z",
+      last_used_at: null,
+    },
+  ];
+  const created = { ...listed[0], id: 3, name: "Ext", token: "bk_abcdefgh123" };
+  await withFetch(
+    (url, init) =>
+      init.method === "POST"
+        ? json(created, 201)
+        : init.method === "DELETE"
+          ? new Response(null, { status: 204 })
+          : json(listed),
+    async (calls) => {
+      assert.deepEqual(await api.tokens(), listed);
+      assert.deepEqual(await api.createToken("Ext"), created);
+      assert.equal(await api.deleteToken(3), undefined);
+      const got = calls.map((c) => `${c.init.method ?? "GET"} ${c.url}`);
+      assert.deepEqual(got, ["GET /api/tokens", "POST /api/tokens", "DELETE /api/tokens/3"]);
+      assert.equal(calls[1].init.body, JSON.stringify({ name: "Ext" }));
+      const post = new Headers(calls[1].init.headers);
+      assert.equal(post.get("X-Bookmarks"), "1");
+      assert.equal(post.get("Content-Type"), "application/json");
+      assert.equal(new Headers(calls[2].init.headers).get("X-Bookmarks"), "1");
+    },
+  );
+});
+
+test("createToken surfaces validation errors", async () => {
+  await withFetch(
+    () => json({ detail: "name: is required", status: 422 }, 422, "application/problem+json"),
+    async () => {
+      await assert.rejects(() => api.createToken(""), /name: is required/);
+    },
+  );
+});
