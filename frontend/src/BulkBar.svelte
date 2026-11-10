@@ -62,7 +62,7 @@
     <strong class="bulk-count" aria-live="polite">{count} selected</strong>
     {#if error}<span class="bulk-err" role="alert">{error}</span>{/if}
     <span class="grow"></span>
-    <Button size="sm" onclick={onexit} disabled={busy}>Done</Button>
+    <Button size="sm" class="ghost" onclick={onexit} disabled={busy}>Done</Button>
   </div>
   {#if panel === "tag" || panel === "untag"}
     <div class="bulk-panel">

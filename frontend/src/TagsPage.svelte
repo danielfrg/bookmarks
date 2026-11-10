@@ -4,6 +4,7 @@
   import { api, type Tag } from "./lib/api.ts";
   import { filterTags, normalizeTagName, wouldMerge } from "./lib/pages.ts";
   import { navigate } from "./lib/view.ts";
+  import ConfirmDialog from "./ConfirmDialog.svelte";
   import PageHeader from "./PageHeader.svelte";
 
   interface Props {
@@ -19,7 +20,9 @@
   let busy = $state(false);
 
   let renaming = $state<{ id: number; text: string; confirmed: boolean } | null>(null);
-  let deleting = $state<number | null>(null);
+  /** The tag awaiting delete confirmation. */
+  let deleting = $state<Tag | null>(null);
+  let deleteError = $state("");
 
   const shown = $derived(filterTags(tags, filter));
   const merge = $derived(renaming ? wouldMerge(tags, renaming.id, renaming.text) : null);
@@ -104,28 +107,33 @@
       cancelRename();
     }
   }
+  // An unused tag is deleted right away; one on bookmarks asks first.
   function startDelete(t: Tag) {
     renaming = null;
     actionError = "";
-    deleting = t.id;
-    void focusSel(".confirm-cancel");
+    deleteError = "";
+    if (t.count === 0) void doDelete(t);
+    else deleting = t;
   }
   function cancelDelete() {
-    const id = deleting;
+    const t = deleting;
     deleting = null;
-    if (id !== null) void focusSel(`.delete-${id}`);
+    if (t) void focusSel(`.delete-${t.id}`);
   }
   async function doDelete(t: Tag) {
     if (busy) return;
     busy = true;
     actionError = "";
+    deleteError = "";
     try {
       await api.deleteTag(t.id);
       deleting = null;
       tags = tags.filter((x) => x.id !== t.id);
       onchanged();
     } catch (e) {
-      actionError = e instanceof Error ? e.message : String(e);
+      const message = e instanceof Error ? e.message : String(e);
+      if (deleting) deleteError = message;
+      else actionError = message;
     } finally {
       busy = false;
     }
@@ -215,29 +223,15 @@
                     {merge ? "Merge" : "Save"}
                   </Button>
                   <Button size="sm" disabled={busy} onclick={cancelRename}>Cancel</Button>
-                {:else if deleting === t.id}
-                  <span class="small confirm-inline"
-                    >Delete #{t.name}? It will be removed from {t.count}
-                    {t.count === 1 ? "bookmark" : "bookmarks"}.</span
-                  >
-                  <Button class="confirm-cancel" size="sm" disabled={busy} onclick={cancelDelete}
-                    >Cancel</Button
-                  >
-                  <Button
-                    size="sm"
-                    tone="danger"
-                    surface="solid"
-                    disabled={busy}
-                    onclick={() => doDelete(t)}>Delete</Button
-                  >
                 {:else}
-                  <Button size="sm" class="rename-{t.id}" onclick={() => startRename(t)}
+                  <Button size="sm" class="ghost rename-{t.id}" onclick={() => startRename(t)}
                     >Rename</Button
                   >
                   <Button
                     size="sm"
                     tone="danger"
-                    class="delete-{t.id}"
+                    class="ghost delete-{t.id}"
+                    disabled={busy}
                     onclick={() => startDelete(t)}>Delete</Button
                   >
                 {/if}
@@ -249,3 +243,16 @@
     {/if}
   {/if}
 </main>
+
+{#if deleting}
+  <ConfirmDialog
+    title="Delete #{deleting.name}?"
+    message="It will be removed from {deleting.count} {deleting.count === 1
+      ? 'bookmark'
+      : 'bookmarks'}. The bookmarks themselves are kept."
+    {busy}
+    error={deleteError}
+    onconfirm={() => deleting && doDelete(deleting)}
+    oncancel={cancelDelete}
+  />
+{/if}

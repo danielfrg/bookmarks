@@ -7,6 +7,7 @@
   import { api, type SavedSearch } from "./lib/api.ts";
   import { byOrder, moveItem } from "./lib/pages.ts";
   import { navigate } from "./lib/view.ts";
+  import ConfirmDialog from "./ConfirmDialog.svelte";
   import SavedSearchEditor from "./SavedSearchEditor.svelte";
   import PageHeader from "./PageHeader.svelte";
 
@@ -21,7 +22,9 @@
   let loadError = $state("");
   let actionError = $state("");
   let busy = $state(false);
-  let deleting = $state<number | null>(null);
+  /** The saved search awaiting delete confirmation. */
+  let deleting = $state<SavedSearch | null>(null);
+  let deleteError = $state("");
   // undefined: closed; null: new; SavedSearch: editing.
   let editing = $state<SavedSearch | null | undefined>(undefined);
   let trigger: HTMLElement | null = null;
@@ -87,13 +90,13 @@
   }
   function startDelete(b: SavedSearch) {
     actionError = "";
-    deleting = b.id;
-    void focusSel(".confirm-cancel");
+    deleteError = "";
+    deleting = b;
   }
   function cancelDelete() {
-    const id = deleting;
+    const b = deleting;
     deleting = null;
-    if (id !== null) void focusSel(`.delete-${id}`);
+    if (b) void focusSel(`.delete-${b.id}`);
   }
   async function doDelete(b: SavedSearch) {
     if (busy) return;
@@ -105,7 +108,7 @@
       savedSearches = savedSearches.filter((x) => x.id !== b.id);
       onchanged();
     } catch (e) {
-      actionError = message(e);
+      deleteError = message(e);
     } finally {
       busy = false;
     }
@@ -191,26 +194,13 @@
                 >{/if}
             </div>
             <span class="row-actions">
-              {#if deleting === b.id}
-                <span class="small confirm-inline"
-                  >Delete “{b.name}”? Bookmarks are not affected.</span
-                >
-                <Button class="confirm-cancel" size="sm" disabled={busy} onclick={cancelDelete}
-                  >Cancel</Button
-                >
-                <Button
-                  size="sm"
-                  tone="danger"
-                  surface="solid"
-                  disabled={busy}
-                  onclick={() => doDelete(b)}>Delete</Button
-                >
-              {:else}
-                <Button size="sm" class="edit-{b.id}" onclick={(e) => open(b, e)}>Edit</Button>
-                <Button size="sm" tone="danger" class="delete-{b.id}" onclick={() => startDelete(b)}
-                  >Delete</Button
-                >
-              {/if}
+              <Button size="sm" class="ghost edit-{b.id}" onclick={(e) => open(b, e)}>Edit</Button>
+              <Button
+                size="sm"
+                tone="danger"
+                class="ghost delete-{b.id}"
+                onclick={() => startDelete(b)}>Delete</Button
+              >
             </span>
           </li>
         {/each}
@@ -225,5 +215,16 @@
     suggestions={tagNames}
     onsaved={saved}
     onclose={closeEditor}
+  />
+{/if}
+
+{#if deleting}
+  <ConfirmDialog
+    title="Delete “{deleting.name}”?"
+    message="The saved search is removed. Bookmarks are not affected."
+    {busy}
+    error={deleteError}
+    onconfirm={() => deleting && doDelete(deleting)}
+    oncancel={cancelDelete}
   />
 {/if}

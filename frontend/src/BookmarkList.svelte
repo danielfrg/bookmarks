@@ -1,13 +1,14 @@
 <script lang="ts">
   import { tick, untrack } from "svelte";
   import { slide } from "svelte/transition";
-  import { Button, EmptyState, Modal, Spinner } from "@kenn-io/kit-ui";
+  import { Button, EmptyState, Spinner } from "@kenn-io/kit-ui";
   import { api, type Bookmark, type BulkAction } from "./lib/api.ts";
   import { activeTagsOf, bulkRequest, displayTitle } from "./lib/query.ts";
   import { shortcutFor } from "./lib/keys.ts";
   import { navigate, type View } from "./lib/view.ts";
   import BookmarkRow from "./BookmarkRow.svelte";
   import BulkBar from "./BulkBar.svelte";
+  import ConfirmDialog from "./ConfirmDialog.svelte";
 
   interface Props {
     status: "loading" | "ready" | "error";
@@ -47,6 +48,7 @@
   let actionError = $state("");
   let confirming = $state<Bookmark | null>(null);
   let confirmTrigger: HTMLElement | null = null;
+  let deleteError = $state("");
   let deleting = $state(false);
   let areaEl: HTMLElement | undefined;
 
@@ -240,7 +242,7 @@
   async function confirmDelete() {
     if (!confirming) return;
     deleting = true;
-    actionError = "";
+    deleteError = "";
     try {
       await api.remove(confirming.id);
       confirming = null;
@@ -248,14 +250,14 @@
       queueMicrotask(() => areaEl?.focus());
       onchanged();
     } catch (e) {
-      actionError = e instanceof Error ? e.message : String(e);
-      closeConfirm();
+      deleteError = e instanceof Error ? e.message : String(e);
     } finally {
       deleting = false;
     }
   }
   function closeConfirm() {
     confirming = null;
+    deleteError = "";
     const t = confirmTrigger;
     confirmTrigger = null;
     if (t?.isConnected) queueMicrotask(() => t.focus());
@@ -370,15 +372,12 @@
 </section>
 
 {#if confirming}
-  <Modal title="Delete bookmark?" tone="danger" onclose={closeConfirm}>
-    <p class="confirm-text">
-      “{displayTitle(confirming)}” will be permanently deleted along with its archives.
-    </p>
-    {#snippet footer()}
-      <Button onclick={closeConfirm}>Cancel</Button>
-      <Button tone="danger" surface="solid" disabled={deleting} onclick={confirmDelete}>
-        Delete
-      </Button>
-    {/snippet}
-  </Modal>
+  <ConfirmDialog
+    title="Delete “{displayTitle(confirming)}”?"
+    message="The bookmark and its archives are permanently deleted."
+    busy={deleting}
+    error={deleteError}
+    onconfirm={confirmDelete}
+    oncancel={closeConfirm}
+  />
 {/if}
