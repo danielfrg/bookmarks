@@ -760,12 +760,21 @@ select {
   gap: 0.5rem;
 }
 .shortcuts li {
-  display: flex;
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
   align-items: center;
   gap: 0.75rem;
 }
 .shortcuts li > :first-child {
-  min-width: 3.5rem;
+  justify-self: start;
+}
+.help-heading {
+  margin: 0 0 0.5rem;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+.shortcuts + .help-heading {
+  margin-top: 1.25rem;
 }
 .shortcuts-note {
   margin: 0 0 0.75rem;

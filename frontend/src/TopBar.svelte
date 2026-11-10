@@ -139,8 +139,8 @@
       <Button
         size="sm"
         class="help-trigger"
-        ariaLabel="Keyboard shortcuts"
-        title="Keyboard shortcuts (?)"
+        ariaLabel="Help"
+        title="Shortcuts and search help (?)"
         onclick={onhelp}
       >
         ?
