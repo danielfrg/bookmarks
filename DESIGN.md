@@ -5,7 +5,7 @@ consistent vocabulary instead of one-off styling.
 
 ## Component Rules
 
-- Theme and component styles come from the shared design system; keep `theme.css` and `components.css` unchanged and put app-specific rules in `app.css`.
+- Theme and component styles come from the shared design system.
 - Import shared controls directly from `@kenn-io/kit-ui`; icons from `@lucide/svelte`.
 - Svelte 5 runes, typed props, callback props. Local components only for
   app-specific behavior, not pass-through wrappers.
