@@ -87,3 +87,6 @@ just install   # frontend dependencies
 just api       # Go API on 127.0.0.1:8080
 just frontend  # Vite dev server on 127.0.0.1:5173, proxies /api etc. to the API
 ```
+
+The Chrome extension lives in `extension/`; see [extension/README.md](extension/README.md)
+to build it and load it unpacked.

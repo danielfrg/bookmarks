@@ -34,3 +34,17 @@ image:
 
 image-check: image
     bash scripts/container-smoke.sh bookmarks:local
+
+ext-install:
+    pnpm --dir extension install --frozen-lockfile
+
+ext-dev:
+    pnpm --dir extension dev
+
+ext-build: ext-install
+    pnpm --dir extension test
+    pnpm --dir extension check
+    pnpm --dir extension build
+
+ext-zip: ext-build
+    pnpm --dir extension zip

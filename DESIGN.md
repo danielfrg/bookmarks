@@ -42,6 +42,8 @@ Structure:
   Wayback link), a separate **Reader text** section (word count, Read,
   Re-extract), notes (markdown), unread toggle, dates; footer Edit / Delete.
 - **Extension popup:** "already saved" banner (or "only a basic capture exists"),
-  URL, title, tags with autocomplete, description, notes, "Archive this page" and
-  "Mark unread" checkboxes, Save with capture progress.
+  URL, title, tags with autocomplete, description, notes, "Mark unread", and a main
+  button with capture progress: Save on a new page (saves and archives; a failed
+  archive still keeps the bookmark), Update on a saved one (metadata only) next to
+  Archive / Re-archive.
 - Search, filters and selection survive reload and browser history.

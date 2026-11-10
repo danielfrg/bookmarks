@@ -1,0 +1,9 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "allowImportingTsExtensions": true,
+    "types": ["svelte", "chrome", "node"]
+  },
+  "include": ["entrypoints", "components", "lib", "src", ".wxt/wxt.d.ts"]
+}
