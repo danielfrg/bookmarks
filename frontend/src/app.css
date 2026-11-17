@@ -1161,3 +1161,40 @@ kbd {
   outline: 3px solid var(--halo);
   outline-offset: 0;
 }
+
+/* Settings: the selected section is a filled chip, not an outlined one. */
+.settings-page [data-slot="tabs-tab"][data-selected] {
+  background: var(--tint);
+  box-shadow: none;
+}
+
+/* Settings rows: the label on the left, its control on the right. */
+.setting {
+  justify-content: space-between;
+}
+.setting > .switch-field {
+  flex: 1;
+  justify-content: space-between;
+}
+.settings-page .per-page {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-4);
+}
+.settings-page .per-page > [data-slot="field-label"],
+.settings-page .per-page > [data-slot="field-description"] {
+  grid-column: 1;
+}
+.settings-page .per-page > [data-slot="number-input"] {
+  width: 9rem;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+/* The dialog body clips overflow, so leave room for the fields' focus rings. */
+.modal-body {
+  margin-block: -4px;
+  padding-block: 4px;
+}

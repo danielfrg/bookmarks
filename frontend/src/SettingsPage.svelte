@@ -194,8 +194,7 @@
     <Tabs
       class="settings-layout"
       orientation="vertical"
-      value={section}
-      onValueChange={(id) => id && navigate({ section: id as SectionId })}
+      bind:value={() => section, (id) => id && navigate({ section: id as SectionId })}
     >
       <TabsList aria-label="Settings sections">
         {#each categories as c (c.id)}
@@ -327,7 +326,7 @@
               API docs: <a href="/api/docs" target="_blank" rel="noreferrer">/api/docs</a>
             </p>
             <p class="small with-copy">
-              MCP: <a class="mono" href="/mcp">{mcpURL}</a>
+              MCP: <a href="/mcp">{mcpURL}</a>
               <CopyButton text={mcpURL} label="Copy MCP URL" />
             </p>
           </div>
