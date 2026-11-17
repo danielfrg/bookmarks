@@ -1,7 +1,10 @@
 <script lang="ts">
   import { tick, untrack } from "svelte";
   import { slide } from "svelte/transition";
-  import { Button, EmptyState, Spinner } from "@kenn-io/kit-ui";
+  import { Button } from "@ui-sdk/svelte/button";
+  import CheckField from "$lib/components/CheckField.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
   import { api, type Bookmark, type BulkAction } from "./lib/api.ts";
   import { activeTagsOf, bulkRequest, displayTitle } from "./lib/query.ts";
   import { shortcutFor } from "./lib/keys.ts";
@@ -43,6 +46,9 @@
     suggestions = [],
     selectMode = $bindable(false),
   }: Props = $props();
+
+  // Open modals: ui-sdk dialogs and alert dialogs.
+  const DIALOG = "[role=dialog], [role=alertdialog]";
 
   let busyId = $state<number | null>(null);
   let actionError = $state("");
@@ -117,7 +123,7 @@
     if (!sc) return;
     // Shortcuts are for the list with nothing modal open.
     if (confirming || view.view !== null || view.edit !== null || view.create) return;
-    if (document.querySelector("[role=dialog]")) return;
+    if (document.querySelector(DIALOG)) return;
     const t = e.target as HTMLElement | null;
     // Enter/arrows on a focused control keep their native meaning.
     if (e.key === "Enter" && t?.closest("a, button")) return;
@@ -204,8 +210,8 @@
     onShortcut(e);
     if (e.key !== "Escape" || !selectMode || panelOpen || e.defaultPrevented || bulkBusy) return;
     const t = e.target as HTMLElement | null;
-    if (t?.closest("input, textarea, select, [role=dialog], [role=combobox]")) return;
-    if (document.querySelector("[role=dialog]")) return;
+    if (t?.closest(`input, textarea, select, [role=combobox], ${DIALOG}`)) return;
+    if (document.querySelector(DIALOG)) return;
     exitSelect();
   }
   $effect(() => () => clearTimeout(messageTimer));
@@ -279,11 +285,7 @@
     <div class="center"><Spinner label="Loading bookmarks" /></div>
   {:else if libraryEmpty}
     <EmptyState title="No bookmarks yet" description="Save your first link to start your library.">
-      <Button
-        tone="info"
-        surface="solid"
-        onclick={() => navigate({ create: { url: "", title: "" } })}
-      >
+      <Button data-variant="solid" onclick={() => navigate({ create: { url: "", title: "" } })}>
         Add bookmark
       </Button>
     </EmptyState>
@@ -310,18 +312,15 @@
           bind:panelOpen
         />
         <div class="select-head">
-          <label class="select-all">
-            <input type="checkbox" checked={pageSelected} onchange={togglePage} />
-            Select all
-          </label>
+          <CheckField checked={pageSelected} onchange={togglePage}>Select all</CheckField>
           {#if allMatching}
             <span>All {count} matching selected.</span>
-            <button type="button" class="link" onclick={() => (allMatching = false)}>Clear</button>
+            <Button data-variant="link" onclick={() => (allMatching = false)}>Clear</Button>
           {:else if pageSelected && count > items.length}
             {#if canSelectAll}
-              <button type="button" class="link" onclick={() => (allMatching = true)}>
+              <Button data-variant="link" onclick={() => (allMatching = true)}>
                 Select all {count} matching
-              </button>
+              </Button>
             {:else}
               <span
                 class="muted"
@@ -358,10 +357,10 @@
     <div class="pager">
       <span class="muted">Showing {first}–{last} of {count}</span>
       <span class="grow"></span>
-      <Button size="sm" disabled={view.page <= 1} onclick={() => navigate({ page: view.page - 1 })}>
+      <Button disabled={view.page <= 1} onclick={() => navigate({ page: view.page - 1 })}>
         Previous
       </Button>
-      <Button size="sm" disabled={last >= count} onclick={() => navigate({ page: view.page + 1 })}>
+      <Button disabled={last >= count} onclick={() => navigate({ page: view.page + 1 })}>
         Next
       </Button>
     </div>

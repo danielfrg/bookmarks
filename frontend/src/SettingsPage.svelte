@@ -1,13 +1,22 @@
 <script lang="ts">
+  import { Button } from "@ui-sdk/svelte/button";
+  import { Field, FieldDescription, FieldLabel } from "@ui-sdk/svelte/field";
+  import { FileInput, FileInputTrigger } from "@ui-sdk/svelte/file-input";
   import {
-    Button,
-    CopyButton,
-    EmptyState,
-    SettingsLayout,
-    SettingsSection,
-    Spinner,
-    Toggle,
-  } from "@kenn-io/kit-ui";
+    NumberInput,
+    NumberInputControl,
+    NumberInputDecrement,
+    NumberInputGroup,
+    NumberInputIncrement,
+  } from "@ui-sdk/svelte/number-input";
+  import { MinusIcon, PlusIcon } from "@lucide/svelte";
+  import { Tabs, TabsList, TabsPanel, TabsTab } from "@ui-sdk/svelte/tabs";
+  import { Textarea } from "@ui-sdk/svelte/textarea";
+  import CopyButton from "$lib/components/CopyButton.svelte";
+  import EmptyState from "$lib/components/EmptyState.svelte";
+  import SettingsSection from "$lib/components/SettingsSection.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
+  import SwitchField from "$lib/components/SwitchField.svelte";
   import { api, type Settings } from "./lib/api.ts";
   import {
     clampItemsPerPage,
@@ -76,8 +85,9 @@
 
   /** Copies settings into the controls; an input being edited keeps its text unless `force`. */
   function sync(s: Settings, force = false) {
-    if (force || document.activeElement?.id !== "auto-tag-rules") rules = s.auto_tag_rules;
-    if (force || document.activeElement?.id !== "items-per-page") {
+    const editing = (selector: string) => document.activeElement?.closest(selector) != null;
+    if (force || !editing(".rules-field")) rules = s.auto_tag_rules;
+    if (force || !editing(".per-page")) {
       const n = s.ui.items_per_page;
       perPage = String(typeof n === "number" && n > 0 ? n : DEFAULT_ITEMS_PER_PAGE);
     }
@@ -144,9 +154,8 @@
   let importResult = $state("");
   let importError = $state("");
   let importWarning = $state("");
-  async function onFile(e: Event) {
-    const input = e.currentTarget as HTMLInputElement;
-    const file = input.files?.[0];
+  async function onFile(files: File[]) {
+    const file = files[0];
     if (!file) return;
     importing = true;
     importResult = "";
@@ -162,7 +171,6 @@
       importError = err instanceof Error ? err.message : String(err);
     } finally {
       importing = false;
-      input.value = "";
     }
   }
 
@@ -183,140 +191,149 @@
     </EmptyState>
   {:else}
     {#if saveError}<p class="notice error" role="alert">{saveError}</p>{/if}
-    <SettingsLayout
-      {categories}
-      bind:active={() => section, (id) => navigate({ section: id as SectionId })}
-      title=""
+    <Tabs
+      class="settings-layout"
+      orientation="vertical"
+      value={section}
+      onValueChange={(id) => id && navigate({ section: id as SectionId })}
     >
-      {#snippet panel(id)}
-        {#if id === "general"}
-          <SettingsSection title="General">
-            <div class="setting">
-              <Toggle
-                label="New bookmarks are unread by default"
-                checked={settings!.default_unread}
-                onchange={(v) => setFlag("default_unread", v)}
-              />
-            </div>
-            <div class="setting">
-              <label for="items-per-page">Items per page</label>
-              <input
-                id="items-per-page"
-                class="num-input"
-                type="number"
-                min="10"
-                max="100"
-                step="1"
-                value={perPage}
-                oninput={(e) => (perPage = e.currentTarget.value)}
-                onblur={savePerPage}
-                onkeydown={(e) => e.key === "Enter" && savePerPage()}
-              />
-              <span class="small muted">Between 10 and 100.</span>
-            </div>
-          </SettingsSection>
-        {:else if id === "metadata"}
-          <SettingsSection
-            title="Metadata"
-            description="What the server fetches for each bookmark."
-          >
-            <div class="setting">
-              <Toggle
-                label="Download favicons"
-                checked={settings!.favicons_enabled}
-                onchange={(v) => setFlag("favicons_enabled", v)}
-              />
-            </div>
-            <div class="setting">
-              <Toggle
-                label="Download preview images"
-                checked={settings!.previews_enabled}
-                onchange={(v) => setFlag("previews_enabled", v)}
-              />
-            </div>
-            <div class="setting">
-              <Toggle
-                label="Look up Internet Archive (Wayback) snapshots"
-                checked={settings!.wayback_enabled}
-                onchange={(v) => setFlag("wayback_enabled", v)}
-              />
-            </div>
-          </SettingsSection>
-        {:else if id === "auto-tagging"}
-          <SettingsSection
-            title="Auto-tagging"
-            description="Add tags to bookmarks automatically based on their URL."
-          >
-            <div class="setting stacked">
-              <label for="auto-tag-rules">Rules</label>
-              <textarea
-                id="auto-tag-rules"
-                class="field-area mono"
-                rows="8"
+      <TabsList aria-label="Settings sections">
+        {#each categories as c (c.id)}
+          <TabsTab value={c.id}>{c.label}</TabsTab>
+        {/each}
+      </TabsList>
+      <TabsPanel value="general" class="settings-panel">
+        <SettingsSection title="General">
+          <div class="setting">
+            <SwitchField
+              label="New bookmarks are unread by default"
+              checked={settings.default_unread}
+              onchange={(v) => setFlag("default_unread", v)}
+            />
+          </div>
+          <div class="setting">
+            <Field name="items-per-page" class="per-page">
+              <FieldLabel>Items per page</FieldLabel>
+              <NumberInput
+                min={10}
+                max={100}
+                step={1}
+                value={Number(perPage) || null}
+                onValueChange={(v) => (perPage = v === null ? "" : String(v))}
+                onValueCommit={savePerPage}
+              >
+                <NumberInputGroup>
+                  <NumberInputDecrement aria-label="Fewer items"
+                    ><MinusIcon aria-hidden="true" /></NumberInputDecrement
+                  >
+                  <NumberInputControl />
+                  <NumberInputIncrement aria-label="More items"
+                    ><PlusIcon aria-hidden="true" /></NumberInputIncrement
+                  >
+                </NumberInputGroup>
+              </NumberInput>
+              <FieldDescription>Between 10 and 100.</FieldDescription>
+            </Field>
+          </div>
+        </SettingsSection>
+      </TabsPanel>
+      <TabsPanel value="metadata" class="settings-panel">
+        <SettingsSection title="Metadata" description="What the server fetches for each bookmark.">
+          <div class="setting">
+            <SwitchField
+              label="Download favicons"
+              checked={settings.favicons_enabled}
+              onchange={(v) => setFlag("favicons_enabled", v)}
+            />
+          </div>
+          <div class="setting">
+            <SwitchField
+              label="Download preview images"
+              checked={settings.previews_enabled}
+              onchange={(v) => setFlag("previews_enabled", v)}
+            />
+          </div>
+          <div class="setting">
+            <SwitchField
+              label="Look up Internet Archive (Wayback) snapshots"
+              checked={settings.wayback_enabled}
+              onchange={(v) => setFlag("wayback_enabled", v)}
+            />
+          </div>
+        </SettingsSection>
+      </TabsPanel>
+      <TabsPanel value="auto-tagging" class="settings-panel">
+        <SettingsSection
+          title="Auto-tagging"
+          description="Add tags to bookmarks automatically based on their URL."
+        >
+          <div class="setting stacked rules-field">
+            <Field name="auto-tag-rules">
+              <FieldLabel>Rules</FieldLabel>
+              <Textarea
+                class="mono"
+                rows={8}
                 spellcheck="false"
                 placeholder={"youtube.com video\nreddit.com/r/Music music reddit"}
                 bind:value={rules}
-                onblur={saveRules}></textarea>
-              <p class="small muted">
-                One rule per line: a URL pattern (host, optional path, query or #fragment) followed
-                by the tags to add, for example <code class="mono"
-                  >reddit.com/r/Music music reddit</code
-                >. A host without a subdomain matches all subdomains; a path matches itself and its
-                subpaths. No wildcards.
-              </p>
-              <div>
-                <Button
-                  tone="info"
-                  surface="solid"
-                  disabled={rules === settings?.auto_tag_rules}
-                  onclick={saveRules}>Save rules</Button
-                >
-              </div>
-            </div>
-          </SettingsSection>
-        {:else if id === "import-export"}
-          <SettingsSection
-            title="Import & export"
-            description="Move bookmarks in or out as a Netscape HTML file."
-          >
-            <div class="setting stacked">
-              <label for="import-file">Import</label>
-              <input
-                id="import-file"
-                type="file"
-                accept=".html,.htm"
-                disabled={importing}
-                onchange={onFile}
+                onblur={saveRules}
               />
-              {#if importing}<span class="small muted" role="status"
-                  ><Spinner size={12} label="Importing" /> Importing…</span
-                >{/if}
-              {#if importResult}<p class="small" role="status">{importResult}</p>{/if}
-              {#if importWarning}<p class="small warn-note" role="status">{importWarning}</p>{/if}
-              {#if importError}<p class="notice error" role="alert">{importError}</p>{/if}
+            </Field>
+            <p class="small muted">
+              One rule per line: a URL pattern (host, optional path, query or #fragment) followed by
+              the tags to add, for example <code class="mono">reddit.com/r/Music music reddit</code
+              >. A host without a subdomain matches all subdomains; a path matches itself and its
+              subpaths. No wildcards.
+            </p>
+            <div>
+              <Button
+                data-variant="solid"
+                disabled={rules === settings.auto_tag_rules}
+                onclick={saveRules}>Save rules</Button
+              >
             </div>
-            <div class="setting stacked">
-              <span class="label">Export</span>
-              <p class="small">
-                <a href={api.exportURL} download="bookmarks.html">Download all bookmarks (.html)</a>
-              </p>
-            </div>
-          </SettingsSection>
-        {:else if id === "api"}
-          <SettingsSection title="API">
-            <div class="setting stacked">
-              <p class="small">
-                API docs: <a href="/api/docs" target="_blank" rel="noreferrer">/api/docs</a>
-              </p>
-              <p class="small with-copy">
-                MCP: <a class="mono" href="/mcp">{mcpURL}</a>
-                <CopyButton text={mcpURL} ariaLabel="Copy MCP URL" title="Copy MCP URL" />
-              </p>
-            </div>
-          </SettingsSection>
-          <TokensSection />
-        {/if}
-      {/snippet}
-    </SettingsLayout>
+          </div>
+        </SettingsSection>
+      </TabsPanel>
+      <TabsPanel value="import-export" class="settings-panel">
+        <SettingsSection
+          title="Import & export"
+          description="Move bookmarks in or out as a Netscape HTML file."
+        >
+          <div class="setting stacked">
+            <span class="label">Import</span>
+            <FileInput value={[]} accept=".html,.htm" disabled={importing} onValueChange={onFile}>
+              <FileInputTrigger>Choose an HTML file</FileInputTrigger>
+            </FileInput>
+            {#if importing}<span class="small muted" role="status"
+                ><Spinner size={12} label="Importing" /> Importing…</span
+              >{/if}
+            {#if importResult}<p class="small" role="status">{importResult}</p>{/if}
+            {#if importWarning}<p class="small warn-note" role="status">{importWarning}</p>{/if}
+            {#if importError}<p class="notice error" role="alert">{importError}</p>{/if}
+          </div>
+          <div class="setting stacked">
+            <span class="label">Export</span>
+            <p class="small">
+              <a href={api.exportURL} download="bookmarks.html">Download all bookmarks (.html)</a>
+            </p>
+          </div>
+        </SettingsSection>
+      </TabsPanel>
+      <TabsPanel value="api" class="settings-panel">
+        <SettingsSection title="API">
+          <div class="setting stacked">
+            <p class="small">
+              API docs: <a href="/api/docs" target="_blank" rel="noreferrer">/api/docs</a>
+            </p>
+            <p class="small with-copy">
+              MCP: <a class="mono" href="/mcp">{mcpURL}</a>
+              <CopyButton text={mcpURL} label="Copy MCP URL" />
+            </p>
+          </div>
+        </SettingsSection>
+        <TokensSection />
+      </TabsPanel>
+    </Tabs>
   {/if}
 </main>

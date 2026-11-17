@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { formatRelativeTime, formatTimestamp } from "@kenn-io/kit-ui";
+  import { Button } from "@ui-sdk/svelte/button";
+  import TagButton from "$lib/components/TagButton.svelte";
+  import CheckField from "$lib/components/CheckField.svelte";
+  import { formatRelativeTime, formatTimestamp } from "./lib/format.ts";
   import type { Bookmark } from "./lib/api.ts";
   import { displayTitle, hostOf } from "./lib/query.ts";
 
@@ -41,13 +44,13 @@
   data-bm={b.id}
 >
   {#if selecting}
-    <input
-      type="checkbox"
-      class="sel"
-      checked={selected}
-      aria-label="Select {displayTitle(b)}"
-      onchange={() => ontoggle?.()}
-    />
+    <span class="sel">
+      <CheckField
+        checked={selected}
+        ariaLabel="Select {displayTitle(b)}"
+        onchange={() => ontoggle?.()}
+      />
+    </span>
   {/if}
   {#if b.favicon_url}
     <img class="fav" src={b.favicon_url} alt="" loading="lazy" width="16" height="16" />
@@ -65,13 +68,11 @@
     <div class="meta">
       <span class="host mono">{hostOf(b.url)}</span>
       {#each b.tags as tag (tag)}
-        <button
-          type="button"
-          class="tag"
-          class:on={activeTags.includes(tag.toLowerCase())}
-          aria-pressed={activeTags.includes(tag.toLowerCase())}
-          onclick={() => ontag(tag)}>#{tag}</button
-        >
+        <TagButton
+          name={tag}
+          on={activeTags.includes(tag.toLowerCase())}
+          onclick={() => ontag(tag)}
+        />
       {/each}
       <span class="date" title={formatTimestamp(b.date_added)}
         >{formatRelativeTime(b.date_added)}</span
@@ -81,43 +82,48 @@
       {#if b.basic_capture_only}<span class="badge">basic capture</span>{/if}
       <div class="actions">
         {#if b.latest_archive_url}
-          <a
-            class="act"
-            href={b.latest_archive_url}
-            target="_blank"
-            rel="noopener"
-            aria-label="View the archived page of {displayTitle(b)}">View</a
+          <Button
+            data-variant="ghost"
+            data-size="sm"
+            aria-label="View the archived page of {displayTitle(b)}"
           >
+            {#snippet render({ props })}<a
+                {...props}
+                href={b.latest_archive_url}
+                target="_blank"
+                rel="noopener">View</a
+              >{/snippet}
+          </Button>
         {/if}
-        <button
-          type="button"
-          class="act"
+        <Button
+          data-variant="ghost"
+          data-size="sm"
           aria-label="View {displayTitle(b)}"
           data-view-trigger={b.id}
-          onclick={onview}>Details</button
+          onclick={onview}>Details</Button
         >
-        <button
-          type="button"
-          class="act"
+        <Button
+          data-variant="ghost"
+          data-size="sm"
           aria-label="Edit {displayTitle(b)}"
           data-edit-trigger={b.id}
-          onclick={onedit}>Edit</button
+          onclick={onedit}>Edit</Button
         >
         {#if b.unread}
-          <button
-            type="button"
-            class="act"
+          <Button
+            data-variant="ghost"
+            data-size="sm"
             disabled={busy}
             aria-label="Mark {displayTitle(b)} as read"
-            onclick={onmarkread}>Mark read</button
+            onclick={onmarkread}>Mark read</Button
           >
         {/if}
-        <button
-          type="button"
-          class="act danger"
+        <Button
+          data-variant="destructive"
+          data-size="sm"
           aria-label="Delete {displayTitle(b)}"
           disabled={busy}
-          onclick={(e) => ondelete(e.currentTarget)}>Delete</button
+          onclick={(e) => ondelete(e.currentTarget as HTMLElement)}>Delete</Button
         >
       </div>
     </div>

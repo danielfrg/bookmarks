@@ -1,22 +1,15 @@
 <script lang="ts">
   // Settings → API → Tokens: list, create (shown once) and revoke API tokens.
-  import {
-    Button,
-    CopyButton,
-    Menu,
-    MenuContent,
-    MenuItem,
-    MenuTrigger,
-    Modal,
-    SettingsSection,
-    Spinner,
-    TextInput,
-    formatRelativeTime,
-    formatTimestamp,
-  } from "@kenn-io/kit-ui";
-  import EllipsisIcon from "@lucide/svelte/icons/ellipsis";
-  import KeyIcon from "@lucide/svelte/icons/key";
-  import TrashIcon from "@lucide/svelte/icons/trash";
+  import { EllipsisIcon, KeyIcon, TrashIcon } from "@lucide/svelte";
+  import { Button } from "@ui-sdk/svelte/button";
+  import { Field, FieldLabel } from "@ui-sdk/svelte/field";
+  import { Input } from "@ui-sdk/svelte/input";
+  import { Menu, MenuContent, MenuItem, MenuTrigger } from "@ui-sdk/svelte/menu";
+  import CopyButton from "$lib/components/CopyButton.svelte";
+  import Modal from "$lib/components/Modal.svelte";
+  import SettingsSection from "$lib/components/SettingsSection.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
+  import { formatRelativeTime, formatTimestamp } from "./lib/format.ts";
   import { onMount, tick } from "svelte";
   import { api, type ApiToken, type CreatedApiToken } from "./lib/api.ts";
   import ConfirmDialog from "./ConfirmDialog.svelte";
@@ -64,7 +57,7 @@
     createError = "";
     created = null;
     dialog = "form";
-    void focusSel("#token-name");
+    void focusSel(".token-dialog input");
   }
   function closeDialog() {
     if (busy) return;
@@ -121,22 +114,21 @@
   title="Tokens"
   description="Let the browser extension, scripts and agents use the API and MCP."
 >
-  <!-- Direct children of the section body: it pads each and draws the dividers. -->
   <div class="tokens-head">
     <span class:muted={!tokens?.length}>{tokens === null && !loadError ? "" : countLabel}</span>
-    <Button size="sm" class="ghost new-token-trigger" onclick={openCreate}>New token</Button>
+    <Button data-variant="ghost" class="new-token-trigger" onclick={openCreate}>New token</Button>
   </div>
   {#if loadError}
     <div class="tokens-note">
       <p class="notice error" role="alert">{loadError}</p>
-      <Button size="sm" onclick={() => void load()}>Retry</Button>
+      <Button onclick={() => void load()}>Retry</Button>
     </div>
   {:else if tokens === null}
     <div class="tokens-note"><Spinner size={12} label="Loading tokens" /></div>
   {:else}
     {#each tokens as t (t.id)}
       <div class="token-row">
-        <span class="token-tile" aria-hidden="true"><KeyIcon size={15} /></span>
+        <span class="token-tile" aria-hidden="true"><KeyIcon /></span>
         <div class="token-main">
           <span class="token-title">{t.name}</span>
           <span class="token-meta">
@@ -149,14 +141,13 @@
               >{:else}Never used{/if}
           </span>
         </div>
-        <Menu align="end">
-          <MenuTrigger ariaLabel="Actions for {t.name}" class="ghost token-menu-trigger">
-            <EllipsisIcon size={16} aria-hidden="true" />
+        <Menu>
+          <MenuTrigger data-variant="ghost" aria-label="Actions for {t.name}">
+            <EllipsisIcon aria-hidden="true" />
           </MenuTrigger>
-          <MenuContent ariaLabel="Actions for {t.name}">
-            <MenuItem tone="danger" onselect={() => startRevoke(t)}>
-              {#snippet icon()}<TrashIcon size={14} />{/snippet}
-              Revoke token
+          <MenuContent aria-label="Actions for {t.name}">
+            <MenuItem value="revoke" onSelect={() => startRevoke(t)}>
+              <TrashIcon aria-hidden="true" /> Revoke token
             </MenuItem>
           </MenuContent>
         </Menu>
@@ -165,66 +156,47 @@
   {/if}
 </SettingsSection>
 
-{#if dialog}
-  <Modal
-    ariaLabel={dialog === "form" ? "Create token" : "Token created"}
-    closable={false}
-    maxWidth="32rem"
-    closeOnOverlayClick={dialog === "form"}
-    onclose={() => dialog === "form" && closeDialog()}
-  >
-    {#if dialog === "form"}
-      <form
-        class="token-dialog"
-        onsubmit={(e) => {
-          e.preventDefault();
-          void create();
-        }}
-      >
-        <h2 class="token-dialog-title">Create token</h2>
-        <label class="token-field">
-          <span>Token name</span>
-          <TextInput
-            id="token-name"
-            block
-            placeholder="A descriptive name, e.g. Chrome extension"
-            autocomplete="off"
-            disabled={busy}
-            bind:value={name}
-          />
-        </label>
-        {#if createError}<p class="notice error" role="alert">{createError}</p>{/if}
-      </form>
-    {:else if created}
-      <div class="token-dialog">
-        <h2 class="token-dialog-title">{created.name}</h2>
-        <div class="token-field">
-          <span>Token</span>
-          <div class="token-value">
-            <code class="mono">{created.token}</code>
-            <CopyButton
-              class="created-token-copy"
-              text={created.token}
-              ariaLabel="Copy token"
-              title="Copy token"
-            />
-          </div>
-          <p class="token-hint">This token is shown only once. Copy it now.</p>
-        </div>
-      </div>
-    {/if}
+{#if dialog === "form"}
+  <Modal title="Create token" size="sm" onclose={closeDialog}>
+    <form
+      id="create-token"
+      class="token-dialog"
+      onsubmit={(e) => {
+        e.preventDefault();
+        void create();
+      }}
+    >
+      <Field name="token-name">
+        <FieldLabel>Token name</FieldLabel>
+        <Input
+          bind:value={name}
+          placeholder="A descriptive name, e.g. Chrome extension"
+          autocomplete="off"
+          disabled={busy}
+        />
+      </Field>
+      {#if createError}<p class="notice error" role="alert">{createError}</p>{/if}
+    </form>
     {#snippet footer()}
-      {#if dialog === "form"}
-        <Button disabled={busy} onclick={closeDialog}>Cancel</Button>
-        <Button
-          tone="info"
-          surface="solid"
-          disabled={busy || !name.trim()}
-          onclick={() => void create()}>Create</Button
-        >
-      {:else}
-        <Button tone="info" surface="solid" onclick={closeDialog}>Done</Button>
-      {/if}
+      <Button disabled={busy} onclick={closeDialog}>Cancel</Button>
+      <Button data-variant="solid" disabled={busy || !name.trim()} onclick={() => void create()}
+        >Create</Button
+      >
+    {/snippet}
+  </Modal>
+{:else if dialog === "created" && created}
+  <!-- Closes only with Done (not Escape or the backdrop), so the one-time token isn't lost. -->
+  <Modal title={created.name} size="sm" closable={false} onclose={closeDialog}>
+    <div class="token-dialog">
+      <span class="token-label">Token</span>
+      <div class="token-value">
+        <code class="mono">{created.token}</code>
+        <CopyButton class="created-token-copy" text={created.token} label="Copy token" />
+      </div>
+      <p class="token-hint">This token is shown only once. Copy it now.</p>
+    </div>
+    {#snippet footer()}
+      <Button data-variant="solid" onclick={closeDialog}>Done</Button>
     {/snippet}
   </Modal>
 {/if}
@@ -244,97 +216,3 @@
     }}
   />
 {/if}
-
-<style>
-  .tokens-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-  }
-  .tokens-note {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  .token-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  /* The row's "…" (a ghost MenuTrigger) is a round icon button. */
-  .token-row :global(.token-menu-trigger) {
-    width: 2rem;
-    height: 2rem;
-    min-height: 0;
-    padding: 0;
-    border-radius: 999px;
-    color: var(--text-muted);
-  }
-  .token-tile {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: none;
-    width: 2rem;
-    height: 2rem;
-    border-radius: var(--radius-md, 8px);
-    background: var(--bg-inset);
-    color: var(--text-muted);
-  }
-  .token-main {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    flex: 1;
-  }
-  .token-title {
-    color: var(--text-primary);
-    overflow-wrap: anywhere;
-  }
-  .token-meta {
-    color: var(--text-muted);
-    font-size: var(--font-size-sm, 0.8125rem);
-  }
-  .muted {
-    color: var(--text-muted);
-  }
-  .token-dialog {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  .token-dialog-title {
-    margin: 0;
-    font-size: var(--font-size-md, 0.9375rem);
-    font-weight: 600;
-    color: var(--text-primary);
-    overflow-wrap: anywhere;
-  }
-  .token-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-  }
-  .token-field > span {
-    font-size: var(--font-size-sm, 0.8125rem);
-    color: var(--text-secondary);
-  }
-  .token-value {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .token-value code {
-    flex: 1;
-    min-width: 0;
-    color: var(--accent-green);
-    overflow-wrap: anywhere;
-    user-select: all;
-  }
-  .token-hint {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: var(--font-size-sm, 0.8125rem);
-  }
-</style>

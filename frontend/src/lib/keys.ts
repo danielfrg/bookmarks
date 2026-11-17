@@ -26,7 +26,7 @@ export function shortcutFor(e: KeyEvent): Shortcut | null {
   const t = e.target as HTMLElement | null;
   if (t) {
     if (/^(INPUT|TEXTAREA|SELECT)$/i.test(t.tagName) || t.isContentEditable) return null;
-    if (t.closest?.("[role=dialog]")) return null;
+    if (t.closest?.("[role=dialog], [role=alertdialog]")) return null;
   }
   return Object.hasOwn(KEYS, e.key) ? KEYS[e.key] : null;
 }

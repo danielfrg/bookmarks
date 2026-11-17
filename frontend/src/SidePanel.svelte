@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { SavedSearch, Tag } from "./lib/api.ts";
   import { activeTagsOf, groupTags } from "./lib/query.ts";
+  import { Button } from "@ui-sdk/svelte/button";
+  import TagButton from "$lib/components/TagButton.svelte";
   import { navigate, type View } from "./lib/view.ts";
 
   interface Props {
@@ -21,23 +23,19 @@
   <h4>SAVED SEARCHES</h4>
   <ul class="saved-list">
     <li>
-      <button
-        type="button"
-        class:on={view.saved === null}
-        onclick={() => navigate({ saved: null })}
+      <Button
+        class="saved-item"
+        data-variant={view.saved === null ? "secondary" : "ghost"}
+        onclick={() => navigate({ saved: null })}>All</Button
       >
-        All
-      </button>
     </li>
     {#each savedSearches as b (b.id)}
       <li>
-        <button
-          type="button"
-          class:on={view.saved === b.id}
-          onclick={() => navigate({ saved: b.id })}
+        <Button
+          class="saved-item"
+          data-variant={view.saved === b.id ? "secondary" : "ghost"}
+          onclick={() => navigate({ saved: b.id })}>{b.name}</Button
         >
-          {b.name}
-        </button>
       </li>
     {/each}
   </ul>
@@ -53,14 +51,12 @@
     <div class="group">
       <b>{g.letter}</b>
       {#each g.tags as t (t.id)}
-        <button
-          type="button"
-          class="tag"
-          class:on={activeTags.includes(t.name.toLowerCase())}
-          aria-pressed={activeTags.includes(t.name.toLowerCase())}
+        <TagButton
+          name={t.name}
+          on={activeTags.includes(t.name.toLowerCase())}
           title="{t.count} bookmark{t.count === 1 ? '' : 's'}"
-          onclick={() => ontag(t.name)}>{t.name}</button
-        >
+          onclick={() => ontag(t.name)}
+        />
       {/each}
     </div>
   {/each}

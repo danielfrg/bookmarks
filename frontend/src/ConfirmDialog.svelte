@@ -1,7 +1,13 @@
 <script lang="ts">
-  // A destructive-action confirmation: bold title, one muted line, Cancel and
-  // a danger button. No header bar or close button; Escape and the overlay cancel.
-  import { Button, Modal } from "@kenn-io/kit-ui";
+  import { Button } from "@ui-sdk/svelte/button";
+  import {
+    AlertDialog,
+    AlertDialogBackdrop,
+    AlertDialogClose,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogTitle,
+  } from "@ui-sdk/svelte/alert-dialog";
 
   interface Props {
     title: string;
@@ -24,35 +30,25 @@
   }: Props = $props();
 </script>
 
-<Modal ariaLabel={title} closable={false} maxWidth="30rem" onclose={() => !busy && oncancel()}>
-  <div class="confirm-dialog">
-    <h2 class="confirm-title">{title}</h2>
-    <p class="confirm-message">{message}</p>
-    {#if error}<p class="notice error" role="alert">{error}</p>{/if}
-  </div>
-  {#snippet footer()}
-    <Button disabled={busy} onclick={oncancel}>Cancel</Button>
-    <Button tone="danger" surface="solid" disabled={busy} onclick={onconfirm}>{confirmLabel}</Button
-    >
-  {/snippet}
-</Modal>
-
-<style>
-  .confirm-dialog {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  .confirm-title {
-    margin: 0;
-    font-size: var(--font-size-md, 0.9375rem);
-    font-weight: 600;
-    color: var(--text-primary);
-    overflow-wrap: anywhere;
-  }
-  .confirm-message {
-    margin: 0;
-    color: var(--text-muted);
-    line-height: 1.5;
-  }
-</style>
+<!-- The parent owns the open state; a close request while busy is ignored. -->
+<AlertDialog
+  open
+  onOpenChange={(open, details) => {
+    if (open) return;
+    details.cancel();
+    if (!busy) oncancel();
+  }}
+>
+  <AlertDialogBackdrop />
+  <AlertDialogContent>
+    <div data-slot="stack">
+      <AlertDialogTitle class="confirm-title">{title}</AlertDialogTitle>
+      <AlertDialogDescription>{message}</AlertDialogDescription>
+    </div>
+    {#if error}<p data-slot="hint" role="alert">{error}</p>{/if}
+    <div data-slot="row">
+      <AlertDialogClose disabled={busy}>Cancel</AlertDialogClose>
+      <Button data-variant="destructive" disabled={busy} onclick={onconfirm}>{confirmLabel}</Button>
+    </div>
+  </AlertDialogContent>
+</AlertDialog>

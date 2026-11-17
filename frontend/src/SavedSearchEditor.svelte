@@ -1,5 +1,14 @@
 <script lang="ts">
-  import { Button, Modal, SegmentedControl, Spinner, TextInput } from "@kenn-io/kit-ui";
+  import { Button } from "@ui-sdk/svelte/button";
+  import { Field, FieldLabel } from "@ui-sdk/svelte/field";
+  import { Input } from "@ui-sdk/svelte/input";
+  import {
+    SegmentedControl,
+    SegmentedControlIndicator,
+    SegmentedControlItem,
+  } from "@ui-sdk/svelte/segmented-control";
+  import Modal from "$lib/components/Modal.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
   import { untrack } from "svelte";
   import { api, type SavedSearch } from "./lib/api.ts";
   import { commitTagText } from "./lib/query.ts";
@@ -66,40 +75,22 @@
 
 <Modal
   title={b0 ? "Edit saved search" : "New saved search"}
-  ariaLabel={b0 ? "Edit saved search" : "New saved search"}
-  width="560px"
-  maxWidth="min(560px, calc(100vw - 32px))"
+  size="md"
   onclose={() => !saving && onclose()}
 >
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="edit-form" onkeydown={onKeydown}>
-    {#if error}<p class="notice error form-error" role="alert">{error}</p>{/if}
+    {#if error}<p class="notice error" role="alert">{error}</p>{/if}
+    <Field name="name" invalid={nameInvalid ? true : undefined}>
+      <FieldLabel>Name</FieldLabel>
+      <Input bind:value={name} required disabled={saving} oninput={() => (nameInvalid = false)} />
+    </Field>
+    <Field name="search">
+      <FieldLabel>Search</FieldLabel>
+      <Input class="mono" bind:value={query} disabled={saving} placeholder="Search terms" />
+    </Field>
     <div class="field">
-      <label for="{uid}-name">Name</label>
-      <TextInput
-        id="{uid}-name"
-        block
-        autofocus
-        required
-        invalid={nameInvalid}
-        disabled={saving}
-        bind:value={name}
-        oninput={() => (nameInvalid = false)}
-      />
-    </div>
-    <div class="field">
-      <label for="{uid}-search">Search</label>
-      <TextInput
-        id="{uid}-search"
-        block
-        class="mono"
-        disabled={saving}
-        bind:value={query}
-        placeholder="Search terms"
-      />
-    </div>
-    <div class="field">
-      <label for="{uid}-any">Any of these tags</label>
+      <label data-slot="field-label" for="{uid}-any">Any of these tags</label>
       <TagInput
         id="{uid}-any"
         bind:tags={anyTags}
@@ -109,7 +100,7 @@
       />
     </div>
     <div class="field">
-      <label for="{uid}-all">All of these tags</label>
+      <label data-slot="field-label" for="{uid}-all">All of these tags</label>
       <TagInput
         id="{uid}-all"
         bind:tags={allTags}
@@ -119,7 +110,7 @@
       />
     </div>
     <div class="field">
-      <label for="{uid}-excl">Excluded tags</label>
+      <label data-slot="field-label" for="{uid}-excl">Excluded tags</label>
       <TagInput
         id="{uid}-excl"
         bind:tags={excludedTags}
@@ -128,25 +119,20 @@
         disabled={saving}
       />
     </div>
-    <div class="field">
-      <span class="field-label" id="{uid}-unread">Unread</span>
-      <SegmentedControl
-        ariaLabel="Unread filter"
-        value={unread}
-        disabled={saving}
-        options={[
-          { value: "off", label: "Off" },
-          { value: "yes", label: "Yes" },
-          { value: "no", label: "No" },
-        ]}
-        onchange={(v) => (unread = v)}
-      />
-    </div>
+    <Field name="unread">
+      <FieldLabel>Unread</FieldLabel>
+      <SegmentedControl value={unread} disabled={saving} onValueChange={(v) => v && (unread = v)}>
+        <SegmentedControlIndicator />
+        <SegmentedControlItem value="off">Off</SegmentedControlItem>
+        <SegmentedControlItem value="yes">Yes</SegmentedControlItem>
+        <SegmentedControlItem value="no">No</SegmentedControlItem>
+      </SegmentedControl>
+    </Field>
   </div>
   {#snippet footer()}
     <Button disabled={saving} onclick={onclose}>Cancel</Button>
     <span class="grow"></span>
-    <Button tone="info" surface="solid" disabled={saving} onclick={save}>
+    <Button data-variant="solid" disabled={saving} onclick={save}>
       {#if saving}<Spinner size={12} label="Saving" />{/if}
       Save
     </Button>

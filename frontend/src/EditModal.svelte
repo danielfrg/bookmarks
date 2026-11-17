@@ -1,6 +1,12 @@
 <script lang="ts">
-  import { Button, Checkbox, FormField, Modal, Notice, Spinner } from "@kenn-io/kit-ui";
-  import { formatTimestamp } from "@kenn-io/kit-ui";
+  import { Button } from "@ui-sdk/svelte/button";
+  import { Field, FieldLabel } from "@ui-sdk/svelte/field";
+  import { Input } from "@ui-sdk/svelte/input";
+  import { Textarea } from "@ui-sdk/svelte/textarea";
+  import CheckField from "$lib/components/CheckField.svelte";
+  import Modal from "$lib/components/Modal.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
+  import { formatTimestamp } from "./lib/format.ts";
   import { tick, untrack } from "svelte";
   import { api, ApiError, type Bookmark, type CheckResult, type SaveInput } from "./lib/api.ts";
   import { commitTagText } from "./lib/query.ts";
@@ -27,7 +33,7 @@
   } = untrack(() => ({ mode, initialURL, initialTitle }));
   const CHECK_DELAY_MS = 500;
 
-  type Field = "url" | "title" | "description" | "notes" | "tags" | "unread";
+  type FieldKey = "url" | "title" | "description" | "notes" | "tags" | "unread";
 
   let phase = $state<"loading" | "ready" | "notfound" | "error">(
     mode0 === "edit" ? "loading" : "ready",
@@ -43,9 +49,9 @@
   let tagText = $state("");
   let unread = $state(false);
   // Fields the user edited by hand; a URL check never overwrites these.
-  const touched = new Set<Field>(title0 ? ["title"] : []);
+  const touched = new Set<FieldKey>(title0 ? ["title"] : []);
   let touchedCount = $state(title0 ? 1 : 0);
-  function touch(f: Field) {
+  function touch(f: FieldKey) {
     touched.add(f);
     touchedCount = touched.size;
   }
@@ -252,7 +258,7 @@
       // Inputs are disabled while saving, so re-enable them before returning focus.
       saving = false;
       await tick();
-      document.getElementById(`${uid}-url`)?.focus();
+      document.querySelector<HTMLElement>(".edit-form [name=url]")?.focus();
     } finally {
       saving = false;
     }
@@ -261,7 +267,7 @@
   // ---- closing ----
   async function focusKeepEditing() {
     await tick();
-    document.querySelector<HTMLElement>(".kit-modal-footer .confirm-cancel")?.focus();
+    document.querySelector<HTMLElement>(".modal-footer .confirm-cancel")?.focus();
   }
   function close() {
     navigate(mode === "create" ? { create: null } : { edit: null });
@@ -295,9 +301,7 @@
     : phase === "notfound"
       ? "Bookmark not found"
       : "Edit bookmark"}
-  ariaLabel={mode === "create" ? "Add bookmark" : "Edit bookmark"}
-  width="560px"
-  maxWidth="min(560px, calc(100vw - 32px))"
+  size="md"
   onclose={requestClose}
 >
   {#if phase === "loading"}
@@ -311,23 +315,26 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="edit-form" onkeydown={onFieldsKeydown}>
       {#if existing}
-        <Notice
-          tone="warning"
-          title="Already saved"
-          message="Saved on {formatTimestamp(existing.date_added)}. Saving updates it."
-        />
+        <p class="notice warn" role="status">
+          <strong>Already saved</strong>
+          Saved on {formatTimestamp(existing.date_added)}. Saving updates it.
+        </p>
       {/if}
-      {#if saveError}<p class="notice error form-error" role="alert">{saveError}</p>{/if}
+      {#if saveError}<p class="notice error" role="alert">{saveError}</p>{/if}
 
       <div class="url-field">
-        <FormField
-          field={{ id: `${uid}-url`, label: "URL", value: url, disabled: saving }}
-          type="url"
-          placeholder="https://"
-          autocomplete="off"
-          oninput={onURLInput}
-          onblur={onURLBlur}
-        />
+        <Field name="url">
+          <FieldLabel>URL</FieldLabel>
+          <Input
+            type="url"
+            value={url}
+            disabled={saving}
+            placeholder="https://"
+            autocomplete="off"
+            onValueChange={onURLInput}
+            onblur={onURLBlur}
+          />
+        </Field>
         {#if checking}
           <span class="small muted check-note" role="status"
             ><Spinner size={12} label="Checking URL" /> Checking…</span
@@ -337,17 +344,21 @@
         {/if}
       </div>
 
-      <FormField
-        field={{ id: `${uid}-title`, label: "Title", value: title, disabled: saving }}
-        placeholder="Page title"
-        oninput={(v) => {
-          title = v;
-          touch("title");
-        }}
-      />
+      <Field name="title">
+        <FieldLabel>Title</FieldLabel>
+        <Input
+          value={title}
+          disabled={saving}
+          placeholder="Page title"
+          onValueChange={(v) => {
+            title = v;
+            touch("title");
+          }}
+        />
+      </Field>
 
       <div class="field">
-        <label for="{uid}-tags">Tags</label>
+        <label data-slot="field-label" for="{uid}-tags">Tags</label>
         <TagInput
           id="{uid}-tags"
           bind:tags
@@ -358,44 +369,41 @@
         />
       </div>
 
-      <div class="field">
-        <label for="{uid}-desc">Description</label>
-        <textarea
-          id="{uid}-desc"
-          class="field-area"
-          rows="5"
+      <Field name="description">
+        <FieldLabel>Description</FieldLabel>
+        <Textarea
+          rows={5}
           disabled={saving}
           value={description}
-          oninput={(e) => {
-            description = e.currentTarget.value;
+          onValueChange={(v) => {
+            description = v;
             touch("description");
-          }}></textarea>
-      </div>
+          }}
+        />
+      </Field>
 
-      <div class="field">
-        <label for="{uid}-notes">Notes</label>
-        <textarea
-          id="{uid}-notes"
-          class="field-area"
-          rows="5"
+      <Field name="notes">
+        <FieldLabel>Notes</FieldLabel>
+        <Textarea
+          rows={5}
           disabled={saving}
           placeholder="Add notes…"
           value={notes}
-          oninput={(e) => {
-            notes = e.currentTarget.value;
+          onValueChange={(v) => {
+            notes = v;
             touch("notes");
-          }}></textarea>
-      </div>
+          }}
+        />
+      </Field>
 
-      <Checkbox
-        label="Mark as unread"
+      <CheckField
         checked={unread}
         disabled={saving}
         onchange={(v) => {
           unread = v;
           touch("unread");
-        }}
-      />
+        }}>Mark as unread</CheckField
+      >
     </div>
   {/if}
 
@@ -407,11 +415,11 @@
       <Button class="confirm-cancel" onclick={() => (confirmingDiscard = false)}>
         Keep editing
       </Button>
-      <Button tone="danger" surface="solid" onclick={close}>Discard</Button>
+      <Button data-variant="destructive" onclick={close}>Discard</Button>
     {:else}
       <Button disabled={saving} onclick={requestClose}>Cancel</Button>
       <span class="grow"></span>
-      <Button tone="info" surface="solid" disabled={!canSave} onclick={save}>
+      <Button data-variant="solid" disabled={!canSave} onclick={save}>
         {#if saving}<Spinner size={12} label="Saving" />{/if}
         {saveLabel}
       </Button>

@@ -1,9 +1,13 @@
 <script lang="ts">
-  import { Button, Markdown, Modal, Spinner, Toggle } from "@kenn-io/kit-ui";
-  import { formatRelativeTime, formatTimestamp } from "@kenn-io/kit-ui";
-  import FileIcon from "@lucide/svelte/icons/file";
-  import FileTextIcon from "@lucide/svelte/icons/file-text";
-  import FileTypeIcon from "@lucide/svelte/icons/file-type";
+  import { FileIcon, FileTextIcon, FileTypeIcon } from "@lucide/svelte";
+  import { Button } from "@ui-sdk/svelte/button";
+  import { FileInput, FileInputTrigger } from "@ui-sdk/svelte/file-input";
+  import TagButton from "$lib/components/TagButton.svelte";
+  import Markdown from "$lib/components/Markdown.svelte";
+  import Modal from "$lib/components/Modal.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
+  import SwitchField from "$lib/components/SwitchField.svelte";
+  import { formatRelativeTime, formatTimestamp } from "./lib/format.ts";
   import { tick } from "svelte";
   import { api, ApiError, type Archive, type Bookmark, type ReaderPage } from "./lib/api.ts";
   import { displayTitle, formatBytes } from "./lib/query.ts";
@@ -32,7 +36,6 @@
   let refreshing = $state(false);
   let confirmArchiveId = $state<number | null>(null);
   let confirmingDelete = $state(false);
-  let fileInput = $state<HTMLInputElement>();
 
   const SOURCE_LABEL: Record<Archive["source"], string> = {
     extension: "Full page snapshot",
@@ -146,10 +149,8 @@
     const ok = await run(() => api.extract(id));
     if (ok) readerNotice = "Re-extract queued";
   }
-  async function onFile(e: Event) {
-    const input = e.currentTarget as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = "";
+  async function onFiles(files: File[]) {
+    const file = files[0];
     if (!file) return;
     uploading = true;
     notice = "";
@@ -178,19 +179,17 @@
 
 {#snippet archiveIcon(type: string)}
   {#if type.includes("html")}
-    <FileTextIcon size="16" aria-hidden="true" />
+    <FileTextIcon aria-hidden="true" />
   {:else if type.includes("pdf")}
-    <FileTypeIcon size="16" aria-hidden="true" />
+    <FileTypeIcon aria-hidden="true" />
   {:else}
-    <FileIcon size="16" aria-hidden="true" />
+    <FileIcon aria-hidden="true" />
   {/if}
 {/snippet}
 
 <Modal
   title={bm ? displayTitle(bm) : phase === "notfound" ? "Bookmark not found" : "Bookmark"}
-  ariaLabel={bm ? displayTitle(bm) : "Bookmark details"}
-  width="600px"
-  maxWidth="min(600px, calc(100vw - 32px))"
+  size="lg"
   onclose={close}
 >
   {#if phase === "loading"}
@@ -212,9 +211,8 @@
         <section>
           <h3 class="d-label">Tags</h3>
           <div class="d-tags">
-            {#each bm.tags as tag (tag)}<button
-                type="button"
-                class="tag"
+            {#each bm.tags as tag (tag)}<TagButton
+                name={tag}
                 onclick={() =>
                   navigate({
                     view: null,
@@ -222,8 +220,8 @@
                     read: null,
                     q: `#${tag}`,
                     saved: null,
-                  })}>#{tag}</button
-              >{/each}
+                  })}
+              />{/each}
           </div>
         </section>
       {/if}
@@ -252,38 +250,48 @@
                 </div>
                 {#if confirmArchiveId === a.id}
                   <span class="small">Delete?</span>
-                  <button
-                    type="button"
-                    class="lnk danger"
+                  <Button
+                    data-variant="destructive"
+                    data-size="sm"
                     disabled={busy}
-                    onclick={() => deleteArchive(a)}>Yes, delete</button
+                    onclick={() => deleteArchive(a)}>Yes, delete</Button
                   >
-                  <button
-                    type="button"
-                    class="lnk confirm-cancel"
-                    onclick={() => (confirmArchiveId = null)}>Cancel</button
+                  <Button
+                    class="confirm-cancel"
+                    data-size="sm"
+                    onclick={() => (confirmArchiveId = null)}>Cancel</Button
                   >
                 {:else}
-                  <a class="lnk" href={a.view_url} target="_blank" rel="noopener noreferrer"
-                    >Open<span class="sr-only"> {SOURCE_LABEL[a.source] ?? a.display_name}</span></a
-                  >
-                  <a class="lnk" href={a.download_url} download
-                    >Download<span class="sr-only">
-                      {SOURCE_LABEL[a.source] ?? a.display_name}</span
-                    ></a
-                  >
-                  <button
-                    type="button"
-                    class="lnk danger"
+                  <Button data-variant="ghost" data-size="sm">
+                    {#snippet render({ props })}<a
+                        {...props}
+                        href={a.view_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >Open<span class="sr-only">
+                          {SOURCE_LABEL[a.source] ?? a.display_name}</span
+                        ></a
+                      >{/snippet}
+                  </Button>
+                  <Button data-variant="ghost" data-size="sm">
+                    {#snippet render({ props })}<a {...props} href={a.download_url} download
+                        >Download<span class="sr-only">
+                          {SOURCE_LABEL[a.source] ?? a.display_name}</span
+                        ></a
+                      >{/snippet}
+                  </Button>
+                  <Button
+                    data-variant="destructive"
+                    data-size="sm"
                     disabled={busy}
                     onclick={(e) => {
-                      const row = e.currentTarget.closest("li");
+                      const row = (e.currentTarget as HTMLElement).closest("li");
                       confirmArchiveId = a.id;
                       void focusCancel(row);
                     }}
                     >Delete<span class="sr-only">
                       {SOURCE_LABEL[a.source] ?? a.display_name}</span
-                    ></button
+                    ></Button
                   >
                 {/if}
               </li>
@@ -291,17 +299,21 @@
           </ul>
         {/if}
         <div class="d-actions">
-          <button type="button" class="lnk" disabled={busy} onclick={capture}
-            >Capture again on server</button
-          >
-          <button type="button" class="lnk" disabled={busy} onclick={() => fileInput?.click()}>
-            {#if uploading}<Spinner size={12} label="Uploading" />{/if}Upload file
-          </button>
-          <input type="file" hidden bind:this={fileInput} onchange={onFile} />
-          {#if bm.web_archive_url}
-            <a class="lnk" href={bm.web_archive_url} target="_blank" rel="noopener noreferrer"
-              >Wayback Machine ↗</a
+          <Button data-size="sm" disabled={busy} onclick={capture}>Capture again on server</Button>
+          <FileInput value={[]} onValueChange={onFiles} disabled={busy || uploading}>
+            <FileInputTrigger data-size="sm"
+              >{#if uploading}<Spinner size={12} label="Uploading" />{/if}Upload file</FileInputTrigger
             >
+          </FileInput>
+          {#if bm.web_archive_url}
+            <Button data-variant="ghost" data-size="sm">
+              {#snippet render({ props })}<a
+                  {...props}
+                  href={bm!.web_archive_url}
+                  target="_blank"
+                  rel="noopener noreferrer">Wayback Machine ↗</a
+                >{/snippet}
+            </Button>
           {/if}
           {#if notice}<span class="small muted" role="status">{notice}</span>{/if}
         </div>
@@ -325,18 +337,15 @@
             {/if}
           </div>
           {#if reader?.status === "ok"}
-            <button type="button" class="lnk" onclick={() => leaveTo({ read: id })}>Read</button>
+            <Button data-size="sm" onclick={() => leaveTo({ read: id })}>Read</Button>
           {/if}
-          <button
-            type="button"
-            class="lnk"
+          <Button
+            data-size="sm"
             disabled={busy || archives.length === 0}
             title={archives.length === 0 ? "Needs an archive first" : undefined}
-            onclick={extract}>Re-extract</button
+            onclick={extract}>Re-extract</Button
           >
-          <button type="button" class="lnk" disabled={refreshing} onclick={refreshReader}
-            >Refresh</button
-          >
+          <Button data-size="sm" disabled={refreshing} onclick={refreshReader}>Refresh</Button>
         </div>
         {#if readerNotice}<p class="small muted" role="status">{readerNotice}</p>{/if}
       </section>
@@ -351,7 +360,15 @@
       </section>
 
       <div class="d-meta">
-        <Toggle bind:checked={unread} label="Unread" disabled={busy} onchange={toggleUnread} />
+        <SwitchField
+          label="Unread"
+          checked={unread}
+          disabled={busy}
+          onchange={(v) => {
+            unread = v;
+            void toggleUnread(v);
+          }}
+        />
         <span class="muted small"
           >Added {formatTimestamp(bm.date_added)} · modified {formatTimestamp(
             bm.date_modified,
@@ -366,18 +383,16 @@
       {#if confirmingDelete}
         <span class="small footer-note">Delete this bookmark and its archives?</span>
         <Button class="confirm-cancel" onclick={() => (confirmingDelete = false)}>Cancel</Button>
-        <Button tone="danger" surface="solid" disabled={busy} onclick={deleteBookmark}>
-          Delete
-        </Button>
+        <Button data-variant="destructive" disabled={busy} onclick={deleteBookmark}>Delete</Button>
       {:else}
         <Button onclick={() => leaveTo({ edit: id })}>Edit</Button>
         <span class="grow"></span>
         <Button
-          tone="danger"
+          data-variant="destructive"
           disabled={busy}
           onclick={(e) => {
             const footer =
-              (e.currentTarget as HTMLElement | null)?.closest(".kit-modal-footer") ?? null;
+              (e.currentTarget as HTMLElement | null)?.closest(".modal-footer") ?? null;
             confirmingDelete = true;
             void focusCancel(footer);
           }}

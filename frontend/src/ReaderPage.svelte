@@ -1,6 +1,9 @@
 <script lang="ts">
-  import { Button, Markdown, Spinner, formatRelativeTime } from "@kenn-io/kit-ui";
-  import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+  import { ArrowLeftIcon } from "@lucide/svelte";
+  import { Button } from "@ui-sdk/svelte/button";
+  import Markdown from "$lib/components/Markdown.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
+  import { formatRelativeTime } from "./lib/format.ts";
   import { onMount, tick } from "svelte";
   import { api, ApiError, type Archive, type Bookmark, type ReaderPage } from "./lib/api.ts";
   import { displayTitle, hostOf } from "./lib/query.ts";
@@ -110,8 +113,8 @@
   $effect(() => {
     document.title = bm ? `${displayTitle(bm)} · Bookmarks` : "Bookmarks";
   });
-  // Links in the article open in a new tab. The Markdown component renders
-  // asynchronously, so watch for (re)rendered content.
+  // Links in the article open in a new tab. Rendered markdown can change
+  // when more text is appended, so watch for (re)rendered content.
   $effect(() => {
     const el = body;
     if (!el) return;
@@ -150,7 +153,7 @@
 <main class="main reader-page" tabindex="-1" bind:this={root}>
   <div class="reader-col">
     <a class="reader-back" href={backHref} onclick={back}>
-      <ArrowLeftIcon size={14} aria-hidden="true" /> Bookmarks
+      <ArrowLeftIcon aria-hidden="true" /> Bookmarks
     </a>
 
     {#if phase === "loading"}

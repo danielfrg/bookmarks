@@ -1,0 +1,122 @@
+/*
+ * Table: a styled native <table> with optional sortable headers.
+ * Reads only tokens.css. Copy this folder into an app and import table.css once.
+ */
+
+[data-slot="table-container"] {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+}
+
+[data-slot="table"] {
+  width: 100%;
+  border-collapse: collapse;
+  caption-side: bottom;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-slot="table-row"] {
+  border-bottom: 1px solid var(--line-faint);
+  transition: background-color var(--duration);
+}
+
+[data-slot="table-body"] > [data-slot="table-row"]:last-child {
+  border-bottom: 0;
+}
+
+[data-slot="table-body"] > [data-slot="table-row"]:hover,
+[data-slot="table-row"][data-state="selected"] {
+  background: var(--tint);
+}
+
+[data-slot="table-footer"] {
+  border-top: 1px solid var(--line-faint);
+  background: var(--tint);
+  font-weight: 500;
+}
+
+[data-slot="table-footer"] > [data-slot="table-row"]:last-child {
+  border-bottom: 0;
+}
+
+:is([data-slot="table-head"], [data-slot="table-cell"]) {
+  height: auto;
+  padding: var(--space-2);
+  border-bottom: 0;
+  text-align: start;
+  vertical-align: middle;
+  white-space: nowrap;
+
+  &[data-align="center"] {
+    text-align: center;
+  }
+
+  &[data-align="end"] {
+    text-align: end;
+  }
+
+  &:has([role="checkbox"], [data-slot="checkbox"]) {
+    width: 1px;
+    padding-inline-end: 0;
+  }
+}
+
+[data-slot="table-head"] {
+  height: 40px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+[data-slot="table-caption"] {
+  margin-top: var(--space-4);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+/* Sortable header: the label plus an arrow, pressable as a whole. */
+[data-slot="table-sort"] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--size-sm);
+  margin-inline: calc(var(--space-2) * -1);
+  padding-inline: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-row);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover,
+  &[data-direction] {
+    color: var(--ink);
+  }
+
+  &:hover {
+    background: var(--tint);
+  }
+
+  [data-align="end"] > & {
+    flex-direction: row-reverse;
+  }
+}
+
+[data-slot="table-sort-icon"] {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  [data-slot="table-sort"]:not([data-direction]) > & {
+    opacity: 0.5;
+  }
+}

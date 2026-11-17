@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { KbdBadge, Modal } from "@kenn-io/kit-ui";
+  import Modal from "$lib/components/Modal.svelte";
 
   interface Props {
     onclose: () => void;
@@ -34,13 +34,15 @@
   ];
 </script>
 
-<Modal title="Help" {onclose} maxWidth="28rem">
+<Modal title="Help" size="sm" {onclose}>
   <h3 class="help-heading">Keyboard shortcuts</h3>
   <p class="muted shortcuts-note">Active on the bookmark list when no dialog is open.</p>
   <ul class="shortcuts">
     {#each rows as r (r.keys[0])}
       <li>
-        <KbdBadge keys={r.keys} />
+        <span class="keys"
+          >{#each r.keys as k (k)}<kbd>{k}</kbd>{/each}</span
+        >
         <span>{r.label}</span>
       </li>
     {/each}

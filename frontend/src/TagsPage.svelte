@@ -1,5 +1,17 @@
 <script lang="ts">
-  import { Button, EmptyState, Spinner, TextInput } from "@kenn-io/kit-ui";
+  import { SearchIcon } from "@lucide/svelte";
+  import { Button } from "@ui-sdk/svelte/button";
+  import { Input, InputGroup } from "@ui-sdk/svelte/input";
+  import EmptyState from "$lib/components/EmptyState.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
+  import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+  } from "./design-system/custom/table";
   import { tick } from "svelte";
   import { api, type Tag } from "./lib/api.ts";
   import { filterTags, normalizeTagName, wouldMerge } from "./lib/pages.ts";
@@ -55,6 +67,7 @@
     deleting = null;
     actionError = "";
     renaming = { id: t.id, text: t.name, confirmed: false };
+    void focusSel(".rename-row input");
   }
   function cancelRename() {
     const id = renaming?.id;
@@ -152,43 +165,44 @@
     <EmptyState title="No tags yet" description="Tags you add to bookmarks show up here." />
   {:else}
     <div class="page-tools">
-      <TextInput
-        type="search"
-        ariaLabel="Filter tags"
-        placeholder="Filter tags"
-        bind:value={filter}
-      />
+      <InputGroup>
+        <SearchIcon aria-hidden="true" />
+        <Input
+          type="search"
+          aria-label="Filter tags"
+          placeholder="Filter tags"
+          bind:value={filter}
+        />
+      </InputGroup>
     </div>
     {#if actionError}<p class="notice error" role="alert">{actionError}</p>{/if}
     {#if shown.length === 0}
       <p class="muted">No tags match “{filter}”.</p>
     {:else}
-      <table class="data-table tags-table">
+      <Table class="tags-table" aria-label="Tags">
         <colgroup>
           <col />
           <col class="col-num" />
           <col class="col-actions" />
         </colgroup>
-        <thead>
-          <tr
-            ><th scope="col">Name</th><th scope="col" class="num">Bookmarks</th><th scope="col"
-              ><span class="sr-only">Actions</span></th
-            ></tr
-          >
-        </thead>
-        <tbody>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead align="end">Bookmarks</TableHead>
+            <TableHead align="end"><span class="sr-only">Actions</span></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {#each shown as t (t.id)}
-            <tr>
-              <td>
+            <TableRow>
+              <TableCell>
                 {#if renaming?.id === t.id}
                   <div class="rename-row">
-                    <TextInput
-                      autofocus
-                      size="sm"
-                      ariaLabel="New name for {t.name}"
+                    <Input
+                      aria-label="New name for {t.name}"
                       value={renaming.text}
                       disabled={busy}
-                      oninput={(v) => {
+                      onValueChange={(v) => {
                         if (renaming) renaming = { ...renaming, text: v, confirmed: false };
                       }}
                       onkeydown={(e) => onRenameKey(e, t)}
@@ -202,44 +216,41 @@
                     {/if}
                   </div>
                 {:else}
-                  <button
-                    type="button"
-                    class="name-link mono"
+                  <Button
+                    class="mono"
+                    data-variant="link"
                     onclick={() => navigate({ pageName: "list", q: `#${t.name}`, saved: null })}
-                    >#{t.name}</button
+                    >#{t.name}</Button
                   >
                 {/if}
-              </td>
-              <td class="num">{t.count}</td>
-              <td class="row-actions">
-                {#if renaming?.id === t.id}
-                  <Button
-                    size="sm"
-                    tone="info"
-                    surface="solid"
-                    disabled={busy}
-                    onclick={() => commitRename(t)}
-                  >
-                    {merge ? "Merge" : "Save"}
-                  </Button>
-                  <Button size="sm" disabled={busy} onclick={cancelRename}>Cancel</Button>
-                {:else}
-                  <Button size="sm" class="ghost rename-{t.id}" onclick={() => startRename(t)}
-                    >Rename</Button
-                  >
-                  <Button
-                    size="sm"
-                    tone="danger"
-                    class="ghost delete-{t.id}"
-                    disabled={busy}
-                    onclick={() => startDelete(t)}>Delete</Button
-                  >
-                {/if}
-              </td>
-            </tr>
+              </TableCell>
+              <TableCell align="end">{t.count}</TableCell>
+              <TableCell align="end">
+                <span class="row-actions">
+                  {#if renaming?.id === t.id}
+                    <Button data-variant="solid" disabled={busy} onclick={() => commitRename(t)}>
+                      {merge ? "Merge" : "Save"}
+                    </Button>
+                    <Button disabled={busy} onclick={cancelRename}>Cancel</Button>
+                  {:else}
+                    <Button
+                      data-variant="ghost"
+                      class="rename-{t.id}"
+                      onclick={() => startRename(t)}>Rename</Button
+                    >
+                    <Button
+                      data-variant="destructive"
+                      class="delete-{t.id}"
+                      disabled={busy}
+                      onclick={() => startDelete(t)}>Delete</Button
+                    >
+                  {/if}
+                </span>
+              </TableCell>
+            </TableRow>
           {/each}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     {/if}
   {/if}
 </main>

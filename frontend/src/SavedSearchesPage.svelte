@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Button, EmptyState, IconButton, Spinner } from "@kenn-io/kit-ui";
-  import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
-  import ArrowUpIcon from "@lucide/svelte/icons/arrow-up";
-  import PlusIcon from "@lucide/svelte/icons/plus";
+  import { ArrowDownIcon, ArrowUpIcon, PlusIcon } from "@lucide/svelte";
+  import { Button } from "@ui-sdk/svelte/button";
+  import EmptyState from "$lib/components/EmptyState.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
   import { tick } from "svelte";
   import { api, type SavedSearch } from "./lib/api.ts";
   import { byOrder, moveItem } from "./lib/pages.ts";
@@ -145,8 +145,8 @@
 <main class="main page">
   <PageHeader title="Saved searches">
     {#if status === "ready"}
-      <Button tone="info" surface="solid" onclick={(e) => open(null, e)}
-        ><PlusIcon size={14} aria-hidden="true" /> New saved search</Button
+      <Button data-variant="solid" onclick={(e) => open(null, e)}
+        ><PlusIcon aria-hidden="true" /> New saved search</Button
       >
     {/if}
   </PageHeader>
@@ -163,42 +163,45 @@
         title="No saved searches yet"
         description="A saved search saves a search with tag rules so you can reopen it in one click."
       >
-        <Button tone="info" surface="solid" onclick={(e) => open(null, e)}>New saved search</Button>
+        <Button data-variant="solid" onclick={(e) => open(null, e)}>New saved search</Button>
       </EmptyState>
     {:else}
       <ul class="saved-rows">
         {#each savedSearches as b, i (b.id)}
           <li class="saved-row">
             <span class="reorder">
-              <IconButton
+              <Button
                 class="move-{b.id}-up"
-                ariaLabel="Move {b.name} up"
+                data-variant="ghost"
+                data-size="sm"
+                aria-label="Move {b.name} up"
                 disabled={busy || i === 0}
-                onclick={() => move(i, -1)}><ArrowUpIcon size={14} aria-hidden="true" /></IconButton
+                onclick={() => move(i, -1)}><ArrowUpIcon aria-hidden="true" /></Button
               >
-              <IconButton
+              <Button
                 class="move-{b.id}-down"
-                ariaLabel="Move {b.name} down"
+                data-variant="ghost"
+                data-size="sm"
+                aria-label="Move {b.name} down"
                 disabled={busy || i === savedSearches.length - 1}
-                onclick={() => move(i, 1)}
-                ><ArrowDownIcon size={14} aria-hidden="true" /></IconButton
+                onclick={() => move(i, 1)}><ArrowDownIcon aria-hidden="true" /></Button
               >
             </span>
             <div class="saved-main">
-              <button
-                type="button"
-                class="name-link"
-                onclick={() => navigate({ pageName: "list", saved: b.id, q: "" })}>{b.name}</button
+              <Button
+                data-variant="link"
+                onclick={() => navigate({ pageName: "list", saved: b.id, q: "" })}>{b.name}</Button
               >
               {#if describe(b)}<span class="small muted mono saved search-desc">{describe(b)}</span
                 >{/if}
             </div>
             <span class="row-actions">
-              <Button size="sm" class="ghost edit-{b.id}" onclick={(e) => open(b, e)}>Edit</Button>
+              <Button data-variant="ghost" class="edit-{b.id}" onclick={(e) => open(b, e)}
+                >Edit</Button
+              >
               <Button
-                size="sm"
-                tone="danger"
-                class="ghost delete-{b.id}"
+                data-variant="destructive"
+                class="delete-{b.id}"
                 onclick={() => startDelete(b)}>Delete</Button
               >
             </span>
