@@ -17,7 +17,7 @@
   const scheme = usePreference(colorScheme);
   const order: ColorSchemeValue[] = ["light", "dark", "system"];
   const current = $derived(scheme.current.value);
-  const next = $derived(order[(order.indexOf(current) + 1) % order.length]);
+  const next = $derived(order[(order.indexOf(current) + 1) % order.length] ?? "system");
 
   function change() {
     colorScheme.set(next);

@@ -1,6 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Button, TextInput, ThemeToggle, Toggle } from "@kenn-io/kit-ui";
+  import { Button } from "@ui-sdk/svelte/button";
+  import { Field, FieldLabel } from "@ui-sdk/svelte/field";
+  import { Input } from "@ui-sdk/svelte/input";
+  import { Preferences } from "@ui-sdk/svelte/preferences";
+  import { ThemeToggle } from "../../src/design-system/custom/theme-toggle";
+  import { colorScheme } from "../../lib/color-scheme";
+  import SwitchField from "../../lib/components/SwitchField.svelte";
   import {
     CloudflareLoginError,
     TokenError,
@@ -98,68 +104,76 @@
   }
 </script>
 
-<main class="page">
-  <header class="page-header">
-    <h1>Bookmarks extension</h1>
-    <ThemeToggle />
-  </header>
+<Preferences preferences={[colorScheme]}>
+  <main class="page">
+    <header class="page-header">
+      <h1>Bookmarks extension</h1>
+      <ThemeToggle {colorScheme} />
+    </header>
 
-  <form class="card" onsubmit={save} aria-labelledby="server-heading">
-    <h2 id="server-heading">Server</h2>
-    <div class="field">
-      <label for="server-url">Server URL</label>
-      <TextInput
-        id="server-url"
-        type="url"
-        block
-        autocomplete="off"
-        placeholder="https://bookmarks.example.com"
-        disabled={!loaded}
-        bind:value={serverURL}
-      />
-    </div>
-    <div class="field">
-      <label for="api-token">API token</label>
-      <div class="token-row">
-        <TextInput
-          id="api-token"
-          type={showToken ? "text" : "password"}
-          block
-          autocomplete="off"
-          disabled={!loaded}
-          bind:value={token}
-        />
-        <Button onclick={() => (showToken = !showToken)} ariaLabel={showToken ? "Hide token" : "Show token"}>
-          {showToken ? "Hide" : "Show"}
-        </Button>
+    <form class="card" onsubmit={save} aria-labelledby="server-heading">
+      <h2 id="server-heading">Server</h2>
+      <div class="card-body">
+        <Field name="server-url">
+          <FieldLabel>Server URL</FieldLabel>
+          <Input
+            type="url"
+            autocomplete="off"
+            placeholder="https://bookmarks.example.com"
+            disabled={!loaded}
+            bind:value={serverURL}
+          />
+        </Field>
+        <div class="token-row">
+          <Field name="api-token">
+            <FieldLabel>API token</FieldLabel>
+            <Input
+              type={showToken ? "text" : "password"}
+              autocomplete="off"
+              disabled={!loaded}
+              bind:value={token}
+            />
+          </Field>
+          <Button
+            onclick={() => (showToken = !showToken)}
+            aria-label={showToken ? "Hide token" : "Show token"}
+          >
+            {showToken ? "Hide" : "Show"}
+          </Button>
+        </div>
+        <div class="actions">
+          <Button type="submit" data-variant="solid" disabled={!loaded}>Save</Button>
+          <Button onclick={test} disabled={!loaded || testing}>Test connection</Button>
+          <span class="status" data-tone={status?.tone} role="status" aria-live="polite">
+            {#if status}
+              {status.text}
+              {#if status.link}
+                <a href={status.link} target="_blank" rel="noreferrer">Open {status.link}</a>
+              {/if}
+            {/if}
+          </span>
+        </div>
       </div>
-    </div>
-    <div class="actions">
-      <Button type="submit" tone="info" surface="solid" disabled={!loaded}>Save</Button>
-      <Button onclick={test} disabled={!loaded || testing}>Test connection</Button>
-      <span class="status" data-tone={status?.tone} role="status" aria-live="polite">
-        {#if status}
-          {status.text}
-          {#if status.link}
-            <a href={status.link} target="_blank" rel="noreferrer">Open {status.link}</a>
-          {/if}
-        {/if}
-      </span>
-    </div>
-  </form>
+    </form>
 
-  <section class="card" aria-labelledby="defaults-heading">
-    <h2 id="defaults-heading">Defaults</h2>
-    <div class="setting">
-      <Toggle
-        label="Mark new bookmarks unread by default"
-        disabled={!loaded}
-        bind:checked={unreadByDefault}
-        onchange={saveDefaults}
-      />
-    </div>
-    {#if defaultsError}
-      <p class="status" data-tone="error" role="alert">{defaultsError}</p>
-    {/if}
-  </section>
-</main>
+    <section class="card" aria-labelledby="defaults-heading">
+      <h2 id="defaults-heading">Defaults</h2>
+      <div class="card-body">
+        <div class="setting">
+          <SwitchField
+            label="Mark new bookmarks unread by default"
+            disabled={!loaded}
+            checked={unreadByDefault}
+            onchange={(v) => {
+              unreadByDefault = v;
+              void saveDefaults();
+            }}
+          />
+        </div>
+        {#if defaultsError}
+          <p class="status" data-tone="error" role="alert">{defaultsError}</p>
+        {/if}
+      </div>
+    </section>
+  </main>
+</Preferences>

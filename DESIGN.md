@@ -24,7 +24,8 @@ consistent vocabulary instead of one-off styling.
 - Svelte 5 runes, typed props, callback props. No Tailwind.
 - The theme's system font stack for the interface and its `--mono` for URLs,
   identifiers and query syntax. No web fonts are loaded and no font files are embedded.
-- The extension has its own theme files and is not part of this migration.
+- The extension uses the same Cadence theme, synced into `extension/src/design-system/`
+  (it has no CSP-allowed inline script, so `lib/boot.ts` sets the saved scheme before mount).
 
 ## Appearance and Accessibility
 

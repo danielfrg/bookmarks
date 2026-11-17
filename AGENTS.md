@@ -11,7 +11,7 @@ user facing, avoid big restructures.
 
 ## Architecture
 
-- `frontend/src/design-system/` is synced from the shared design system and is never edited by hand (change it there and run its sync); the Cadence theme and the ui-sdk components are described in `DESIGN.md`.
+- `frontend/src/design-system/` and `extension/src/design-system/` are synced from the shared design system and is never edited by hand (change it there and run its sync); the Cadence theme and the ui-sdk components are described in `DESIGN.md`.
 - Go in `/cmd` and `/internal`; TypeScript + Svelte 5 in `/frontend`; the
   extension (WXT + Svelte 5) in `/extension`.
 

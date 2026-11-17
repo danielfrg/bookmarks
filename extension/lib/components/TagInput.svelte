@@ -1,5 +1,6 @@
 <script lang="ts">
-  import XIcon from "@lucide/svelte/icons/x";
+  import { XIcon } from "@lucide/svelte";
+  import { Button } from "@ui-sdk/svelte/button";
   import { commitTagText } from "../tags.ts";
 
   interface Props {
@@ -101,12 +102,12 @@
   {#each tags as tag (tag)}
     <span class="chip">
       #{tag}
-      <button
-        type="button"
+      <Button
         class="chip-x"
+        data-variant="ghost"
         aria-label="Remove tag {tag}"
         {disabled}
-        onclick={() => remove(tag)}><XIcon size={12} aria-hidden="true" /></button
+        onclick={() => remove(tag)}><XIcon aria-hidden="true" /></Button
       >
     </span>
   {/each}
