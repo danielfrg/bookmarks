@@ -3,15 +3,21 @@ import assert from "node:assert/strict";
 import type { UserConfig } from "vite";
 
 // The query string forces a fresh evaluation so each case sees its own env.
-const loadConfig = async (tag: string): Promise<UserConfig> =>
-  (await import(`../../vite.config.ts?${tag}`)).default;
+const loadConfig = async (
+  tag: string,
+  command: "serve" | "build" = "serve",
+): Promise<UserConfig> => {
+  const factory = (await import(`../../vite.config.ts?${tag}`)).default;
+  return factory({ command, mode: command === "build" ? "production" : "development" });
+};
 
-test("vite config serves under /assets/ and proxies the API paths unchanged", async () => {
+test("vite config serves at the root in dev, under /assets/ when built, and proxies the API paths unchanged", async () => {
   const previous = process.env.BOOKMARKS_API_TARGET;
   try {
     delete process.env.BOOKMARKS_API_TARGET;
     const config = await loadConfig("default");
-    assert.equal(config.base, "/assets/");
+    assert.equal(config.base, "/");
+    assert.equal((await loadConfig("build", "build")).base, "/assets/");
     const proxy = config.server?.proxy ?? {};
     assert.deepEqual(Object.keys(proxy).sort(), ["/api", "/archives", "/favicons", "/previews"]);
     for (const rule of Object.values(proxy)) {

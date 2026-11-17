@@ -8,7 +8,7 @@ const apiTarget = process.env.BOOKMARKS_API_TARGET ?? "http://127.0.0.1:8080";
 // Preserve the browser-facing Host so the API can validate its Origin.
 const proxied = { target: apiTarget, changeOrigin: false };
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     svelte(),
     {
@@ -19,7 +19,8 @@ export default defineConfig({
       ],
     },
   ],
-  base: "/assets/",
+  // The built app is served from /assets/ by the Go binary; the dev server serves it at the root.
+  base: command === "build" ? "/assets/" : "/",
   // Emit files at /assets/<hash>.js rather than /assets/assets/<hash>.js.
   build: { assetsDir: "" },
   resolve: { alias: { $lib: fileURLToPath(new URL("./src/lib", import.meta.url)) } },
@@ -34,4 +35,4 @@ export default defineConfig({
       "/previews": { ...proxied },
     },
   },
-});
+}));

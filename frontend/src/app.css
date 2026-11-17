@@ -1142,3 +1142,22 @@ kbd {
   display: flex;
   margin-top: 3px;
 }
+
+/* Header page links: the selected one is a filled chip, without the outline ring. */
+.toplinks [data-slot="button"] {
+  box-shadow: none;
+}
+
+/* Tag field: one focus treatment on the box; the inner input draws none of its own. */
+.tag-input input.tag-text,
+.tag-input input.tag-text:hover,
+.tag-input input.tag-text:focus,
+.tag-input input.tag-text:focus-visible {
+  background: none;
+  box-shadow: none;
+  outline: none;
+}
+.tag-input:focus-within {
+  outline: 3px solid var(--halo);
+  outline-offset: 0;
+}

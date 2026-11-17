@@ -200,8 +200,8 @@
                 >Edit</Button
               >
               <Button
-                data-variant="destructive"
-                class="delete-{b.id}"
+                data-variant="ghost"
+                class="row-delete delete-{b.id}"
                 onclick={() => startDelete(b)}>Delete</Button
               >
             </span>

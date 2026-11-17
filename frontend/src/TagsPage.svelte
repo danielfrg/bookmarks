@@ -2,6 +2,7 @@
   import { SearchIcon } from "@lucide/svelte";
   import { Button } from "@ui-sdk/svelte/button";
   import { Input, InputGroup } from "@ui-sdk/svelte/input";
+  import TagButton from "$lib/components/TagButton.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
   import {
@@ -216,12 +217,10 @@
                     {/if}
                   </div>
                 {:else}
-                  <Button
-                    class="mono"
-                    data-variant="link"
+                  <TagButton
+                    name={t.name}
                     onclick={() => navigate({ pageName: "list", q: `#${t.name}`, saved: null })}
-                    >#{t.name}</Button
-                  >
+                  />
                 {/if}
               </TableCell>
               <TableCell align="end">{t.count}</TableCell>
@@ -239,8 +238,8 @@
                       onclick={() => startRename(t)}>Rename</Button
                     >
                     <Button
-                      data-variant="destructive"
-                      class="delete-{t.id}"
+                      data-variant="ghost"
+                      class="row-delete delete-{t.id}"
                       disabled={busy}
                       onclick={() => startDelete(t)}>Delete</Button
                     >
