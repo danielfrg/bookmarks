@@ -9,7 +9,7 @@ A bookmark manager.
 - Single Go binary with the web UI embedded; SQLite database.
 - Inspired by [Linkding](https://linkding.link/) and basically a port from Python + Django to Go + Svelte (~10x less memory used!).
 
-**Personal project**: This is completely vibe coded for my own personal use. I won't be accepting feature requets or PRs. You're welcome to fork it and make it your own.
+**Personal project**: This is completely vibe coded for my own personal use. I won't be accepting feature requests or PRs. You're welcome to fork it and make it your own.
 
 ![Bookmarks](docs/screenshot.png)
 
