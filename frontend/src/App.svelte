@@ -9,18 +9,20 @@
     type Settings,
     type Tag,
   } from "./lib/api.ts";
+  import { Preferences } from "@ui-sdk/svelte/preferences";
+  import { colorScheme } from "$lib/color-scheme";
   import { toggleTagInQuery } from "./lib/query.ts";
   import { listParams, navigate, readView } from "./lib/view.ts";
-  import DetailsModal from "./DetailsModal.svelte";
-  import EditModal from "./EditModal.svelte";
-  import ReaderPage from "./ReaderPage.svelte";
-  import BookmarkList from "./BookmarkList.svelte";
-  import SavedSearchesPage from "./SavedSearchesPage.svelte";
-  import SettingsPage from "./SettingsPage.svelte";
-  import TagsPage from "./TagsPage.svelte";
-  import SidePanel from "./SidePanel.svelte";
-  import TopBar from "./TopBar.svelte";
-  import ShortcutsModal from "./ShortcutsModal.svelte";
+  import DetailsModal from "./lib/components/DetailsModal.svelte";
+  import EditModal from "./lib/components/EditModal.svelte";
+  import ReaderPage from "./lib/components/ReaderPage.svelte";
+  import BookmarkList from "./lib/components/BookmarkList.svelte";
+  import SavedSearchesPage from "./lib/components/SavedSearchesPage.svelte";
+  import SettingsPage from "./lib/components/SettingsPage.svelte";
+  import TagsPage from "./lib/components/TagsPage.svelte";
+  import SidePanel from "./lib/components/SidePanel.svelte";
+  import TopBar from "./lib/components/TopBar.svelte";
+  import ShortcutsModal from "./lib/components/ShortcutsModal.svelte";
 
   let view = $state(readView(new URL(window.location.href)));
   let pageSize = $state(30);
@@ -201,68 +203,70 @@
   const onTag = (tag: string) => navigate({ q: toggleTagInQuery(view.q, tag), page: 1 });
 </script>
 
-<TopBar
-  {view}
-  {panelOpen}
-  {selecting}
-  ontogglepanel={() => (panelOpen = !panelOpen)}
-  onselect={() => (selecting = !selecting)}
-  onhelp={openHelp}
-/>
-{#if view.read !== null}
-  {#key view.read}
-    <ReaderPage id={view.read} />
-  {/key}
-{:else if view.pageName === "list"}
-  <div class="layout">
-    <main class="main" tabindex="-1">
-      {#if notice}<p class="notice" role="status">{notice}</p>{/if}
-      <BookmarkList
-        bind:selectMode={selecting}
-        {listKey}
-        {reloadKey}
-        {status}
-        {error}
-        {items}
-        {count}
-        {view}
-        {pageSize}
-        onreload={reload}
-        onchanged={reload}
-        ontag={onTag}
-        onhelp={openHelp}
-        suggestions={tags.map((t) => t.name)}
-      />
-    </main>
-    <SidePanel {view} {tags} {savedSearches} status={sideStatus} open={panelOpen} ontag={onTag} />
-  </div>
-{:else if view.pageName === "tags"}
-  <TagsPage onchanged={reload} />
-{:else if view.pageName === "saved"}
-  <SavedSearchesPage onchanged={reload} />
-{:else}
-  <SettingsPage section={view.section} onsettings={applySettings} onchanged={reload} />
-{/if}
-
-{#if view.view !== null}
-  {#key view.view}
-    <DetailsModal id={view.view} onchanged={reload} ondeleted={(id) => (deletedId = id)} />
-  {/key}
-{/if}
-
-{#if view.create}
-  <EditModal
-    mode="create"
-    initialURL={view.create.url}
-    initialTitle={view.create.title}
-    onchanged={reload}
+<Preferences preferences={[colorScheme]}>
+  <TopBar
+    {view}
+    {panelOpen}
+    {selecting}
+    ontogglepanel={() => (panelOpen = !panelOpen)}
+    onselect={() => (selecting = !selecting)}
+    onhelp={openHelp}
   />
-{:else if view.edit !== null}
-  {#key view.edit}
-    <EditModal mode="edit" id={view.edit} onchanged={reload} />
-  {/key}
-{/if}
+  {#if view.read !== null}
+    {#key view.read}
+      <ReaderPage id={view.read} />
+    {/key}
+  {:else if view.pageName === "list"}
+    <div class="layout">
+      <main class="main" tabindex="-1">
+        {#if notice}<p class="notice" role="status">{notice}</p>{/if}
+        <BookmarkList
+          bind:selectMode={selecting}
+          {listKey}
+          {reloadKey}
+          {status}
+          {error}
+          {items}
+          {count}
+          {view}
+          {pageSize}
+          onreload={reload}
+          onchanged={reload}
+          ontag={onTag}
+          onhelp={openHelp}
+          suggestions={tags.map((t) => t.name)}
+        />
+      </main>
+      <SidePanel {view} {tags} {savedSearches} status={sideStatus} open={panelOpen} ontag={onTag} />
+    </div>
+  {:else if view.pageName === "tags"}
+    <TagsPage onchanged={reload} />
+  {:else if view.pageName === "saved"}
+    <SavedSearchesPage onchanged={reload} />
+  {:else}
+    <SettingsPage section={view.section} onsettings={applySettings} onchanged={reload} />
+  {/if}
 
-{#if helpOpen}
-  <ShortcutsModal onclose={closeHelp} />
-{/if}
+  {#if view.view !== null}
+    {#key view.view}
+      <DetailsModal id={view.view} onchanged={reload} ondeleted={(id) => (deletedId = id)} />
+    {/key}
+  {/if}
+
+  {#if view.create}
+    <EditModal
+      mode="create"
+      initialURL={view.create.url}
+      initialTitle={view.create.title}
+      onchanged={reload}
+    />
+  {:else if view.edit !== null}
+    {#key view.edit}
+      <EditModal mode="edit" id={view.edit} onchanged={reload} />
+    {/key}
+  {/if}
+
+  {#if helpOpen}
+    <ShortcutsModal onclose={closeHelp} />
+  {/if}
+</Preferences>

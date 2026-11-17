@@ -1,7 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import SettingsIcon from "@lucide/svelte/icons/settings";
-  import { Button, Checkbox, IconButton, Spinner, TextInput, formatTimestamp } from "@kenn-io/kit-ui";
+  import { SettingsIcon } from "@lucide/svelte";
+  import { Button } from "@ui-sdk/svelte/button";
+  import { Field, FieldLabel } from "@ui-sdk/svelte/field";
+  import { Input } from "@ui-sdk/svelte/input";
+  import { Preferences } from "@ui-sdk/svelte/preferences";
+  import { Textarea } from "@ui-sdk/svelte/textarea";
+  import { colorScheme } from "../../lib/color-scheme";
+  import { formatTimestamp } from "../../lib/format";
+  import CheckField from "../../lib/components/CheckField.svelte";
+  import Spinner from "../../lib/components/Spinner.svelte";
   import { client, type CheckResult } from "../../lib/api";
   import { capturability, type Capturability } from "../../lib/capturability";
   import PopupNotice from "../../lib/components/PopupNotice.svelte";
@@ -227,162 +235,155 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<div class="popup">
-  <header class="popup-head">
-    <span class="popup-title">Bookmarks</span>
-    <IconButton ariaLabel="Open settings" size="sm" onclick={openOptions}>
-      <SettingsIcon size={14} aria-hidden="true" />
-    </IconButton>
-  </header>
+<Preferences preferences={[colorScheme]}>
+  <div class="popup">
+    <header class="popup-head">
+      <span class="popup-title">Bookmarks</span>
+      <Button data-variant="ghost" aria-label="Open settings" onclick={openOptions}>
+        <SettingsIcon aria-hidden="true" />
+      </Button>
+    </header>
 
-  {#if screen === "setup"}
-    <div class="popup-state">
-      <PopupNotice
-        tone="info"
-        title="Set up the extension"
-        message="Add your server URL and API token."
-      />
-      <Button tone="info" surface="solid" onclick={openOptions}>Open settings</Button>
-    </div>
-  {:else if screen === "unbookmarkable"}
-    <div class="popup-state">
-      <PopupNotice
-        tone="warning"
-        title="Can't save this page"
-        message="Only http and https pages can be bookmarked."
-      />
-    </div>
-  {:else if screen === "check-error" && failure}
-    <div class="popup-state">
-      {#if failure.kind === "cloudflare"}
+    {#if screen === "setup"}
+      <div class="popup-state">
         <PopupNotice
-          tone="error"
-          title={failure.title}
-          message="Log in, then reopen this popup."
+          tone="info"
+          title="Set up the extension"
+          message="Add your server URL and API token."
         />
-        <Button tone="info" surface="solid" onclick={openServer}>Log in to Cloudflare</Button>
-      {:else if failure.kind === "token"}
-        <PopupNotice tone="error" title={failure.title} message="The server rejected the API token." />
-        <Button tone="info" surface="solid" onclick={openOptions}>Open settings</Button>
-      {:else}
-        <PopupNotice tone="error" title={failure.title} message="Check the server URL and your connection." />
-        <Button onclick={() => void load()}>Retry</Button>
-      {/if}
-    </div>
-  {:else if screen !== "form" && stage !== null}
-    <div class="popup-state" role="status">
-      <span class="progress-text">{progressText(stage)}</span>
-      <div class="progress" aria-hidden="true"><i></i></div>
-    </div>
-  {:else if screen === "loading"}
-    <div class="popup-state popup-loading" role="status">
-      <Spinner size={14} label="Loading" />
-    </div>
-  {:else}
-    <form
-      class="popup-form"
-      onsubmit={(e) => {
-        e.preventDefault();
-        submit(actions.saveArchives);
-      }}
-    >
-      {#each notices as n (n.kind)}
-        <div class="popup-notice">
-          {#if n.kind === "already-saved"}
-            <PopupNotice tone="warning" title="Already saved" message="Saved on {existingDate}." />
-          {:else}
-            <PopupNotice tone="warning" title="Basic capture only" message="Archive to save the full page." />
-          {/if}
-        </div>
-      {/each}
-      {#if checkWarning}
-        <div class="popup-notice">
-          <PopupNotice tone="warning" title="Couldn't check this page" message={checkWarning} />
-        </div>
-      {/if}
-      {#if resumedSuccess}
-        <div class="popup-notice"><PopupNotice tone="success" title="Saved ✓" /></div>
-      {/if}
-      {#if errorNotice}
-        <div class="popup-notice">
-          <PopupNotice tone="error" title={errorNotice.title} message={errorNotice.message} />
-        </div>
-      {/if}
-
-      <div class="popup-body">
-        <div class="field">
-          <label for="p-url">URL</label>
-          <TextInput id="p-url" class="url-input" block readonly value={tab?.url ?? ""} />
-        </div>
-        <div class="field">
-          <label for="p-title">Title</label>
-          <TextInput
-            id="p-title"
-            block
-            autocomplete="off"
-            disabled={saving}
-            bind:value={title}
-          />
-        </div>
-        <div class="field">
-          <label for="p-tags">Tags</label>
-          <TagInput
-            id="p-tags"
-            bind:tags
-            bind:text={tagText}
-            suggestions={allTags}
-            disabled={saving}
-          />
-        </div>
-        <div class="field">
-          <label for="p-desc">Description</label>
-          <textarea
-            id="p-desc"
-            class="field-area"
-            rows="3"
-            disabled={saving}
-            bind:value={description}
-          ></textarea>
-        </div>
-        <div class="field">
-          <label for="p-notes">Notes</label>
-          <textarea
-            id="p-notes"
-            class="field-area"
-            rows="3"
-            placeholder="Add notes…"
-            disabled={saving}
-            bind:value={notes}
-          ></textarea>
-        </div>
-        <div class="checks">
-          <Checkbox label="Mark unread" bind:checked={unread} disabled={saving} />
-          {#if archiveDisabledReason}
-            <p class="hint">{archiveDisabledReason}</p>
-          {/if}
-        </div>
+        <Button data-variant="solid" onclick={openOptions}>Open settings</Button>
       </div>
+    {:else if screen === "unbookmarkable"}
+      <div class="popup-state">
+        <PopupNotice
+          tone="warning"
+          title="Can't save this page"
+          message="Only http and https pages can be bookmarked."
+        />
+      </div>
+    {:else if screen === "check-error" && failure}
+      <div class="popup-state">
+        {#if failure.kind === "cloudflare"}
+          <PopupNotice tone="error" title={failure.title} message="Log in, then reopen this popup." />
+          <Button data-variant="solid" onclick={openServer}>Log in to Cloudflare</Button>
+        {:else if failure.kind === "token"}
+          <PopupNotice
+            tone="error"
+            title={failure.title}
+            message="The server rejected the API token."
+          />
+          <Button data-variant="solid" onclick={openOptions}>Open settings</Button>
+        {:else}
+          <PopupNotice
+            tone="error"
+            title={failure.title}
+            message="Check the server URL and your connection."
+          />
+          <Button onclick={() => void load()}>Retry</Button>
+        {/if}
+      </div>
+    {:else if screen !== "form" && stage !== null}
+      <div class="popup-state" role="status">
+        <span class="progress-text">{progressText(stage)}</span>
+        <div class="progress" aria-hidden="true"><i></i></div>
+      </div>
+    {:else if screen === "loading"}
+      <div class="popup-state popup-loading" role="status">
+        <Spinner size={14} label="Loading" />
+      </div>
+    {:else}
+      <form
+        class="popup-form"
+        onsubmit={(e) => {
+          e.preventDefault();
+          submit(actions.saveArchives);
+        }}
+      >
+        {#each notices as n (n.kind)}
+          <div class="popup-notice">
+            {#if n.kind === "already-saved"}
+              <PopupNotice tone="warning" title="Already saved" message="Saved on {existingDate}." />
+            {:else}
+              <PopupNotice
+                tone="warning"
+                title="Basic capture only"
+                message="Archive to save the full page."
+              />
+            {/if}
+          </div>
+        {/each}
+        {#if checkWarning}
+          <div class="popup-notice">
+            <PopupNotice tone="warning" title="Couldn't check this page" message={checkWarning} />
+          </div>
+        {/if}
+        {#if resumedSuccess}
+          <div class="popup-notice"><PopupNotice tone="success" title="Saved ✓" /></div>
+        {/if}
+        {#if errorNotice}
+          <div class="popup-notice">
+            <PopupNotice tone="error" title={errorNotice.title} message={errorNotice.message} />
+          </div>
+        {/if}
 
-      <footer class="popup-foot">
-        <div class="foot-status" role="status" aria-live="polite">
-          {#if stage}
-            <span class="progress-text">{progressText(stage)}</span>
-            <div class="progress" aria-hidden="true"><i></i></div>
-          {:else if done}
-            <span class="progress-text ok">Saved ✓</span>
-          {/if}
+        <div class="popup-body">
+          <Field name="url">
+            <FieldLabel>URL</FieldLabel>
+            <Input class="url-input" readonly value={tab?.url ?? ""} />
+          </Field>
+          <Field name="title">
+            <FieldLabel>Title</FieldLabel>
+            <Input autocomplete="off" disabled={saving} bind:value={title} />
+          </Field>
+          <div class="field">
+            <label data-slot="field-label" for="p-tags">Tags</label>
+            <TagInput
+              id="p-tags"
+              bind:tags
+              bind:text={tagText}
+              suggestions={allTags}
+              disabled={saving}
+            />
+          </div>
+          <Field name="description">
+            <FieldLabel>Description</FieldLabel>
+            <Textarea rows={3} disabled={saving} bind:value={description} />
+          </Field>
+          <Field name="notes">
+            <FieldLabel>Notes</FieldLabel>
+            <Textarea rows={3} placeholder="Add notes…" disabled={saving} bind:value={notes} />
+          </Field>
+          <div class="checks">
+            <CheckField checked={unread} disabled={saving} onchange={(v) => (unread = v)}
+              >Mark unread</CheckField
+            >
+            {#if archiveDisabledReason}
+              <p class="hint">{archiveDisabledReason}</p>
+            {/if}
+          </div>
         </div>
-        <div class="foot-actions">
-          {#if actions.archiveLabel}
-            <Button disabled={saving || done} onclick={() => submit(true)}>
-              {actions.archiveLabel}
+
+        <footer class="popup-foot">
+          <div class="foot-status" role="status" aria-live="polite">
+            {#if stage}
+              <span class="progress-text">{progressText(stage)}</span>
+              <div class="progress" aria-hidden="true"><i></i></div>
+            {:else if done}
+              <span class="progress-text ok">Saved ✓</span>
+            {/if}
+          </div>
+          <div class="foot-actions">
+            {#if actions.archiveLabel}
+              <Button disabled={saving || done} onclick={() => submit(true)}>
+                {actions.archiveLabel}
+              </Button>
+            {/if}
+            <Button type="submit" data-variant="solid" disabled={saving || done}>
+              {actions.saveLabel}
             </Button>
-          {/if}
-          <Button type="submit" tone="info" surface="solid" disabled={saving || done}>
-            {actions.saveLabel}
-          </Button>
-        </div>
-      </footer>
-    </form>
-  {/if}
-</div>
+          </div>
+        </footer>
+      </form>
+    {/if}
+  </div>
+</Preferences>

@@ -1,0 +1,407 @@
+<script lang="ts">
+  import { FileIcon, FileTextIcon, FileTypeIcon } from "@lucide/svelte";
+  import { Button } from "@ui-sdk/svelte/button";
+  import { FileInput, FileInputTrigger } from "@ui-sdk/svelte/file-input";
+  import TagButton from "$lib/components/TagButton.svelte";
+  import Markdown from "$lib/components/Markdown.svelte";
+  import Modal from "$lib/components/Modal.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
+  import SwitchField from "$lib/components/SwitchField.svelte";
+  import { formatRelativeTime, formatTimestamp } from "../format.ts";
+  import { tick } from "svelte";
+  import { api, ApiError, type Archive, type Bookmark, type ReaderPage } from "../api.ts";
+  import { displayTitle, formatBytes } from "../query.ts";
+  import { navigate } from "../view.ts";
+
+  interface Props {
+    id: number;
+    onchanged: () => void;
+    ondeleted?: (id: number) => void;
+  }
+  let { id, onchanged, ondeleted }: Props = $props();
+
+  type ReaderInfo = Pick<ReaderPage, "status" | "error" | "word_count" | "extracted_at">;
+
+  let phase = $state<"loading" | "ready" | "notfound" | "error">("loading");
+  let loadError = $state("");
+  let bm = $state<Bookmark | null>(null);
+  let archives = $state<Archive[]>([]);
+  let reader = $state<ReaderInfo | null>(null);
+  let unread = $state(false);
+  let actionError = $state("");
+  let busy = $state(false);
+  let uploading = $state(false);
+  let notice = $state("");
+  let readerNotice = $state("");
+  let refreshing = $state(false);
+  let confirmArchiveId = $state<number | null>(null);
+  let confirmingDelete = $state(false);
+
+  const SOURCE_LABEL: Record<Archive["source"], string> = {
+    extension: "Full page snapshot",
+    server: "Basic capture",
+    upload: "Uploaded file",
+    import: "Imported snapshot",
+  };
+
+  // Moves focus to the visible inline-confirm Cancel button.
+  async function focusCancel(scope: Element | null) {
+    await tick();
+    scope?.querySelector<HTMLElement>(".confirm-cancel")?.focus();
+  }
+
+  const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+  async function fetchReader(): Promise<ReaderInfo | null> {
+    try {
+      return await api.reader(id, 0, 1);
+    } catch {
+      return null;
+    }
+  }
+
+  async function load(signal: AbortSignal) {
+    phase = "loading";
+    try {
+      const [b, a, r] = await Promise.all([api.get(id, signal), api.archives(id), fetchReader()]);
+      if (signal.aborted) return;
+      bm = b;
+      unread = b.unread;
+      archives = a;
+      reader = r;
+      phase = "ready";
+    } catch (e) {
+      if (signal.aborted) return;
+      if (e instanceof ApiError && e.status === 404) phase = "notfound";
+      else {
+        loadError = message(e);
+        phase = "error";
+      }
+    }
+  }
+
+  let attempt = $state(0);
+  $effect(() => {
+    void attempt;
+    const ctrl = new AbortController();
+    void load(ctrl.signal);
+    return () => ctrl.abort();
+  });
+
+  function close() {
+    navigate({ view: null });
+  }
+  function leaveTo(patch: Parameters<typeof navigate>[0]) {
+    navigate({ ...patch, view: null });
+  }
+
+  /** Runs a mutation: shows errors inline, tells the list to refresh on success. */
+  async function run(fn: () => Promise<void>): Promise<boolean> {
+    busy = true;
+    actionError = "";
+    try {
+      await fn();
+      onchanged();
+      return true;
+    } catch (e) {
+      actionError = message(e);
+      return false;
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function refreshArchives() {
+    archives = await api.archives(id);
+  }
+
+  async function toggleUnread(v: boolean) {
+    const ok = await run(async () => {
+      bm = await api.update(id, { unread: v });
+    });
+    if (!ok) unread = !v;
+  }
+  async function deleteBookmark() {
+    const ok = await run(async () => {
+      await api.remove(id);
+    });
+    if (ok) {
+      ondeleted?.(id);
+      close();
+    } else confirmingDelete = false;
+  }
+
+  async function deleteArchive(a: Archive) {
+    const ok = await run(async () => {
+      await api.deleteArchive(a.id);
+      confirmArchiveId = null;
+      await refreshArchives();
+    });
+    if (!ok) confirmArchiveId = null;
+  }
+  async function capture() {
+    notice = "";
+    const ok = await run(() => api.capture(id));
+    if (ok) notice = "Capture queued";
+  }
+  async function extract() {
+    readerNotice = "";
+    const ok = await run(() => api.extract(id));
+    if (ok) readerNotice = "Re-extract queued";
+  }
+  async function onFiles(files: File[]) {
+    const file = files[0];
+    if (!file) return;
+    uploading = true;
+    notice = "";
+    await run(async () => {
+      await api.uploadArchive(id, file);
+      await refreshArchives();
+    });
+    uploading = false;
+  }
+  async function refreshReader() {
+    refreshing = true;
+    actionError = "";
+    try {
+      const [r, a, b] = await Promise.all([fetchReader(), api.archives(id), api.get(id)]);
+      reader = r;
+      archives = a;
+      bm = b;
+      readerNotice = "";
+    } catch (e) {
+      actionError = message(e);
+    } finally {
+      refreshing = false;
+    }
+  }
+</script>
+
+{#snippet archiveIcon(type: string)}
+  {#if type.includes("html")}
+    <FileTextIcon aria-hidden="true" />
+  {:else if type.includes("pdf")}
+    <FileTypeIcon aria-hidden="true" />
+  {:else}
+    <FileIcon aria-hidden="true" />
+  {/if}
+{/snippet}
+
+<Modal
+  title={bm ? displayTitle(bm) : phase === "notfound" ? "Bookmark not found" : "Bookmark"}
+  size="lg"
+  onclose={close}
+>
+  {#if phase === "loading"}
+    <div class="center"><Spinner label="Loading bookmark" /></div>
+  {:else if phase === "notfound"}
+    <p class="detail-empty">This bookmark does not exist or was deleted.</p>
+  {:else if phase === "error"}
+    <p class="notice error" role="alert">{loadError}</p>
+    <Button onclick={() => attempt++}>Retry</Button>
+  {:else if bm}
+    <div class="details">
+      {#if actionError}<p class="notice error" role="alert">{actionError}</p>{/if}
+
+      <div class="d-url">
+        <a class="mono" href={bm.url} target="_blank" rel="noopener noreferrer">{bm.url}</a>
+      </div>
+
+      {#if bm.tags.length > 0}
+        <section>
+          <h3 class="d-label">Tags</h3>
+          <div class="d-tags">
+            {#each bm.tags as tag (tag)}<TagButton
+                name={tag}
+                onclick={() =>
+                  navigate({
+                    view: null,
+                    pageName: "list",
+                    read: null,
+                    q: `#${tag}`,
+                    saved: null,
+                  })}
+              />{/each}
+          </div>
+        </section>
+      {/if}
+
+      {#if bm.description}
+        <section>
+          <h3 class="d-label">Description</h3>
+          <p class="d-text">{bm.description}</p>
+        </section>
+      {/if}
+
+      <section>
+        <h3 class="d-label">Archive</h3>
+        {#if archives.length === 0}
+          <p class="detail-empty">No archive yet</p>
+        {:else}
+          <ul class="d-box">
+            {#each archives as a (a.id)}
+              <li class="asset">
+                <span class="asset-icon">{@render archiveIcon(a.content_type)}</span>
+                <div class="asset-name">
+                  {SOURCE_LABEL[a.source] ?? a.display_name}
+                  <span class="muted small"
+                    >· {formatTimestamp(a.created_at)} · {formatBytes(a.file_size)}</span
+                  >
+                </div>
+                {#if confirmArchiveId === a.id}
+                  <span class="small">Delete?</span>
+                  <Button
+                    data-variant="destructive"
+                    data-size="sm"
+                    disabled={busy}
+                    onclick={() => deleteArchive(a)}>Yes, delete</Button
+                  >
+                  <Button
+                    class="confirm-cancel"
+                    data-size="sm"
+                    onclick={() => (confirmArchiveId = null)}>Cancel</Button
+                  >
+                {:else}
+                  <Button data-variant="ghost" data-size="sm">
+                    {#snippet render({ props })}<a
+                        {...props}
+                        href={a.view_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >Open<span class="sr-only">
+                          {SOURCE_LABEL[a.source] ?? a.display_name}</span
+                        ></a
+                      >{/snippet}
+                  </Button>
+                  <Button data-variant="ghost" data-size="sm">
+                    {#snippet render({ props })}<a {...props} href={a.download_url} download
+                        >Download<span class="sr-only">
+                          {SOURCE_LABEL[a.source] ?? a.display_name}</span
+                        ></a
+                      >{/snippet}
+                  </Button>
+                  <Button
+                    data-variant="destructive"
+                    data-size="sm"
+                    disabled={busy}
+                    onclick={(e) => {
+                      const row = (e.currentTarget as HTMLElement).closest("li");
+                      confirmArchiveId = a.id;
+                      void focusCancel(row);
+                    }}
+                    >Delete<span class="sr-only">
+                      {SOURCE_LABEL[a.source] ?? a.display_name}</span
+                    ></Button
+                  >
+                {/if}
+              </li>
+            {/each}
+          </ul>
+        {/if}
+        <div class="d-actions">
+          <Button data-size="sm" disabled={busy} onclick={capture}>Capture again on server</Button>
+          <FileInput value={[]} onValueChange={onFiles} disabled={busy || uploading}>
+            <FileInputTrigger data-size="sm"
+              >{#if uploading}<Spinner size={12} label="Uploading" />{/if}Upload file</FileInputTrigger
+            >
+          </FileInput>
+          {#if bm.web_archive_url}
+            <Button data-variant="ghost" data-size="sm">
+              {#snippet render({ props })}<a
+                  {...props}
+                  href={bm!.web_archive_url}
+                  target="_blank"
+                  rel="noopener noreferrer">Wayback Machine ↗</a
+                >{/snippet}
+            </Button>
+          {/if}
+          {#if notice}<span class="small muted" role="status">{notice}</span>{/if}
+        </div>
+      </section>
+
+      <section>
+        <h3 class="d-label">Reader text</h3>
+        <div class="d-box reader-box">
+          <div class="reader-line">
+            {#if reader === null}
+              <span class="muted">Status unavailable</span>
+            {:else if reader.status === "ok"}
+              <span
+                >{reader.word_count.toLocaleString()} words · extracted
+                {formatRelativeTime(reader.extracted_at)}</span
+              >
+            {:else if reader.status === "failed"}
+              <span class="reader-fail">{reader.error || "Extraction failed"}</span>
+            {:else}
+              <span class="muted">Not extracted yet</span>
+            {/if}
+          </div>
+          {#if reader?.status === "ok"}
+            <Button data-size="sm" onclick={() => leaveTo({ read: id })}>Read</Button>
+          {/if}
+          <Button
+            data-size="sm"
+            disabled={busy || archives.length === 0}
+            title={archives.length === 0 ? "Needs an archive first" : undefined}
+            onclick={extract}>Re-extract</Button
+          >
+          <Button data-size="sm" disabled={refreshing} onclick={refreshReader}>Refresh</Button>
+        </div>
+        {#if readerNotice}<p class="small muted" role="status">{readerNotice}</p>{/if}
+      </section>
+
+      <section>
+        <h3 class="d-label">Notes</h3>
+        {#if bm.notes.trim()}
+          <div class="d-box notes"><Markdown source={bm.notes} /></div>
+        {:else}
+          <p class="detail-empty">No notes</p>
+        {/if}
+      </section>
+
+      <div class="d-meta">
+        <SwitchField
+          label="Unread"
+          checked={unread}
+          disabled={busy}
+          onchange={(v) => {
+            unread = v;
+            void toggleUnread(v);
+          }}
+        />
+        <span class="muted small"
+          >Added {formatTimestamp(bm.date_added)} · modified {formatTimestamp(
+            bm.date_modified,
+          )}</span
+        >
+      </div>
+    </div>
+  {/if}
+
+  {#snippet footer()}
+    {#if phase === "ready" && bm}
+      {#if confirmingDelete}
+        <span class="small footer-note">Delete this bookmark and its archives?</span>
+        <Button class="confirm-cancel" onclick={() => (confirmingDelete = false)}>Cancel</Button>
+        <Button data-variant="destructive" disabled={busy} onclick={deleteBookmark}>Delete</Button>
+      {:else}
+        <Button onclick={() => leaveTo({ edit: id })}>Edit</Button>
+        <span class="grow"></span>
+        <Button
+          data-variant="destructive"
+          disabled={busy}
+          onclick={(e) => {
+            const footer =
+              (e.currentTarget as HTMLElement | null)?.closest(".modal-footer") ?? null;
+            confirmingDelete = true;
+            void focusCancel(footer);
+          }}
+        >
+          Delete
+        </Button>
+      {/if}
+    {:else}
+      <Button onclick={close}>Close</Button>
+    {/if}
+  {/snippet}
+</Modal>

@@ -3,8 +3,8 @@
 Chrome (Manifest V3) extension that saves the current page to your Bookmarks
 server, optionally with a full-page archive captured in the browser.
 
-Built with WXT, Svelte 5 and kit-ui. `src/theme.css` and `src/components.css`
-are byte-identical copies of the shared design system.
+Built with WXT, Svelte 5 and ui-sdk. `src/design-system/` is synced from the shared
+design system and is never edited by hand.
 
 ## Develop
 

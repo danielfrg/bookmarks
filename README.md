@@ -3,14 +3,17 @@
 A bookmark manager.
 
 - One Chrome extension saves the bookmark and a full-page archive
-  (SingleFile-style) of the page as you see it.
+  (SingleFile-style) as you see it.
 - Every archive gets a stored reader-text version, indexed for full-text search.
-- REST API and an MCP (`/mcp`) server, so agents can search and read your bookmarks.
-- SQLite storage; one Go binary with the web UI embedded.
+- REST API and an MCP (`/mcp`) endpoint, so agents can search and read your bookmarks.
+- Single Go binary with the web UI embedded; SQLite database.
+- Inspired by [Linkding](https://linkding.link/) and basically a port from Python + Django to Go + Svelte (~10x less memory used!).
+
+**Personal project**: This is completely vibe coded for my own personal use. I won't be accepting feature requests or PRs. You're welcome to fork it and make it your own.
 
 ![Bookmarks](docs/screenshot.png)
 
-## Run
+## Installation
 
 ### Docker
 
@@ -28,6 +31,60 @@ docker run -it \
 
 Published images support Linux AMD64 and ARM64. `latest` tracks `main`.
 
+### Standalone
+
+Build the single binary with the frontend embedded (see [Build](#build)) and run it:
+
+```sh
+./bookmarks
+```
+
+Open [http://127.0.0.1:8080](http://127.0.0.1:8080). Settings are environment variables, see
+[Configuration](#configuration).
+
+## Usage
+
+### Search syntax
+
+| Query | Meaning |
+| --- | --- |
+| `#tag` | Has the tag |
+| `!unread` | Unread bookmarks |
+| `!untagged` | Bookmarks without tags |
+| `!basic` | Basic captures (no full archive) |
+| `!noarchive` | Bookmarks with no archive at all |
+| `"exact phrase"` | Phrase match |
+| `foo and bar`, `foo or bar`, `not foo` | Boolean operators |
+
+### Keyboard shortcuts
+
+On the list, with no dialog open; `?` shows them in the app.
+
+| Key | Action |
+| --- | --- |
+| `n` | Add a bookmark |
+| `s` or `/` | Focus search |
+| `j` / `k` or `↓` / `↑` | Move the highlighted row |
+| `Enter` or `o` | Open the highlighted link in a new tab |
+| `v` | View details |
+| `e` | Edit |
+
+### API tokens
+
+Create API tokens in the web UI under **Settings → API**: give each app its own
+named token (the Chrome extension, an agent).
+
+### Endpoints
+
+- `/mcp`: MCP server (search and read bookmarks)
+- `/api/docs`: interactive API documentation (OpenAPI at `/api/openapi`)
+- `/healthz`, `/readyz`: health checks
+
+### Chrome extension
+
+The Chrome extension lives in `extension/`; see [extension/README.md](extension/README.md)
+to build it and load it unpacked.
+
 ## Configuration
 
 All settings are environment variables.
@@ -42,42 +99,6 @@ All settings are environment variables.
 | `BOOKMARKS_FAVICON_PROVIDER` | Google favicon service | Favicon URL template containing `{url}` |
 | `BOOKMARKS_ALLOW_PRIVATE_FETCH` | `false` | Let the server fetch private/loopback addresses |
 
-## Web UI
-
-**Search syntax**
-
-| Query | Meaning |
-| --- | --- |
-| `#tag` | Has the tag |
-| `!unread` | Unread bookmarks |
-| `!untagged` | Bookmarks without tags |
-| `!basic` | Basic captures (no full archive) |
-| `!noarchive` | Bookmarks with no archive at all |
-| `"exact phrase"` | Phrase match |
-| `foo and bar`, `foo or bar`, `not foo` | Boolean operators |
-
-**Keyboard shortcuts** (on the list, with no dialog open; `?` shows them in the app)
-
-| Key | Action |
-| --- | --- |
-| `n` | Add a bookmark |
-| `s` or `/` | Focus search |
-| `j` / `k` or `↓` / `↑` | Move the highlighted row |
-| `Enter` or `o` | Open the highlighted link in a new tab |
-| `v` | View details |
-| `e` | Edit |
-
-## Endpoints
-
-- `/mcp`: MCP server (search and read bookmarks)
-- `/api/docs`: interactive API documentation (OpenAPI at `/api/openapi`)
-- `/healthz`, `/readyz`: health checks
-
-## API tokens
-
-Create API tokens in the web UI under **Settings → API**: give each app its own
-named token (the Chrome extension, an agent).
-
 ## Development
 
 Requires Go, Node, pnpm.
@@ -86,7 +107,14 @@ Requires Go, Node, pnpm.
 just install   # frontend dependencies
 just api       # Go API on 127.0.0.1:8080
 just frontend  # Vite dev server on 127.0.0.1:5173, proxies /api etc. to the API
+just check     # format, lint, vet, tests and type checks
 ```
 
-The Chrome extension lives in `extension/`; see [extension/README.md](extension/README.md)
-to build it and load it unpacked.
+`frontend/src/design-system/` is synced from the shared design system and is never edited by hand.
+
+## Build
+
+```sh
+just build     # frontend embedded in a single binary: ./bookmarks
+just image-check  # build the Docker image and smoke test it
+```

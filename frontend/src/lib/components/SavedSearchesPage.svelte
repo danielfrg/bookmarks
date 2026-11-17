@@ -1,0 +1,233 @@
+<script lang="ts">
+  import { ArrowDownIcon, ArrowUpIcon, PlusIcon } from "@lucide/svelte";
+  import { Button } from "@ui-sdk/svelte/button";
+  import EmptyState from "$lib/components/EmptyState.svelte";
+  import Spinner from "$lib/components/Spinner.svelte";
+  import { tick } from "svelte";
+  import { api, type SavedSearch } from "../api.ts";
+  import { byOrder, moveItem } from "../pages.ts";
+  import { navigate } from "../view.ts";
+  import ConfirmDialog from "./ConfirmDialog.svelte";
+  import SavedSearchEditor from "./SavedSearchEditor.svelte";
+  import PageHeader from "./PageHeader.svelte";
+
+  interface Props {
+    onchanged: () => void;
+  }
+  let { onchanged }: Props = $props();
+
+  let savedSearches = $state<SavedSearch[]>([]);
+  let tagNames = $state<string[]>([]);
+  let status = $state<"loading" | "ready" | "error">("loading");
+  let loadError = $state("");
+  let actionError = $state("");
+  let busy = $state(false);
+  /** The saved search awaiting delete confirmation. */
+  let deleting = $state<SavedSearch | null>(null);
+  let deleteError = $state("");
+  // undefined: closed; null: new; SavedSearch: editing.
+  let editing = $state<SavedSearch | null | undefined>(undefined);
+  let trigger: HTMLElement | null = null;
+
+  let attempt = $state(0);
+  $effect(() => {
+    void attempt;
+    const ctrl = new AbortController();
+    status = "loading";
+    api
+      .savedSearches()
+      .then((b) => {
+        if (ctrl.signal.aborted) return;
+        savedSearches = byOrder(b);
+        status = "ready";
+      })
+      .catch((e: unknown) => {
+        if (ctrl.signal.aborted) return;
+        loadError = e instanceof Error ? e.message : String(e);
+        status = "error";
+      });
+    return () => ctrl.abort();
+  });
+  $effect(() => {
+    let live = true;
+    api
+      .tags()
+      .then((t) => live && (tagNames = t.map((x) => x.name)))
+      .catch(() => {});
+    return () => (live = false);
+  });
+
+  const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+  async function focusSel(sel: string) {
+    await tick();
+    document.querySelector<HTMLElement>(sel)?.focus();
+  }
+
+  async function refresh() {
+    savedSearches = byOrder(await api.savedSearches());
+  }
+  async function move(index: number, dir: -1 | 1) {
+    if (busy) return;
+    const ids = savedSearches.map((b) => b.id);
+    const next = moveItem(ids, index, dir);
+    busy = true;
+    actionError = "";
+    try {
+      await api.reorderSavedSearches(next);
+      await refresh();
+      onchanged();
+      const moved = ids[index];
+      const same = dir === -1 ? "up" : "down";
+      const other = dir === -1 ? "down" : "up";
+      void focusSel(
+        `.move-${moved}-${same}:not(:disabled), .move-${moved}-${other}:not(:disabled)`,
+      );
+    } catch (e) {
+      actionError = message(e);
+    } finally {
+      busy = false;
+    }
+  }
+  function startDelete(b: SavedSearch) {
+    actionError = "";
+    deleteError = "";
+    deleting = b;
+  }
+  function cancelDelete() {
+    const b = deleting;
+    deleting = null;
+    if (b) void focusSel(`.delete-${b.id}`);
+  }
+  async function doDelete(b: SavedSearch) {
+    if (busy) return;
+    busy = true;
+    actionError = "";
+    try {
+      await api.deleteSavedSearch(b.id);
+      deleting = null;
+      savedSearches = savedSearches.filter((x) => x.id !== b.id);
+      onchanged();
+    } catch (e) {
+      deleteError = message(e);
+    } finally {
+      busy = false;
+    }
+  }
+  function open(b: SavedSearch | null, e: Event) {
+    trigger = e.currentTarget as HTMLElement;
+    editing = b;
+  }
+  async function closeEditor() {
+    editing = undefined;
+    await tick();
+    requestAnimationFrame(() => trigger?.focus());
+  }
+  async function saved() {
+    onchanged();
+    try {
+      await refresh();
+    } catch (e) {
+      actionError = message(e);
+    }
+    void closeEditor();
+  }
+  function describe(b: SavedSearch): string {
+    const parts: string[] = [];
+    if (b.query) parts.push(b.query);
+    if (b.any_tags.length) parts.push(`any: ${b.any_tags.map((t) => "#" + t).join(" ")}`);
+    if (b.all_tags.length) parts.push(`all: ${b.all_tags.map((t) => "#" + t).join(" ")}`);
+    if (b.excluded_tags.length) parts.push(`not: ${b.excluded_tags.map((t) => "#" + t).join(" ")}`);
+    if (b.filter_unread !== "off") parts.push(b.filter_unread === "yes" ? "unread" : "read");
+    return parts.join(" · ");
+  }
+</script>
+
+<main class="main page">
+  <PageHeader title="Saved searches">
+    {#if status === "ready"}
+      <Button data-variant="solid" onclick={(e) => open(null, e)}
+        ><PlusIcon aria-hidden="true" /> New saved search</Button
+      >
+    {/if}
+  </PageHeader>
+  {#if status === "loading"}
+    <div class="center"><Spinner label="Loading saved searches" /></div>
+  {:else if status === "error"}
+    <EmptyState title="Could not load saved searches" description={loadError}>
+      <Button onclick={() => attempt++}>Retry</Button>
+    </EmptyState>
+  {:else}
+    {#if actionError}<p class="notice error" role="alert">{actionError}</p>{/if}
+    {#if savedSearches.length === 0}
+      <EmptyState
+        title="No saved searches yet"
+        description="A saved search saves a search with tag rules so you can reopen it in one click."
+      >
+        <Button data-variant="solid" onclick={(e) => open(null, e)}>New saved search</Button>
+      </EmptyState>
+    {:else}
+      <ul class="saved-rows">
+        {#each savedSearches as b, i (b.id)}
+          <li class="saved-row">
+            <span class="reorder">
+              <Button
+                class="move-{b.id}-up"
+                data-variant="ghost"
+                data-size="sm"
+                aria-label="Move {b.name} up"
+                disabled={busy || i === 0}
+                onclick={() => move(i, -1)}><ArrowUpIcon aria-hidden="true" /></Button
+              >
+              <Button
+                class="move-{b.id}-down"
+                data-variant="ghost"
+                data-size="sm"
+                aria-label="Move {b.name} down"
+                disabled={busy || i === savedSearches.length - 1}
+                onclick={() => move(i, 1)}><ArrowDownIcon aria-hidden="true" /></Button
+              >
+            </span>
+            <div class="saved-main">
+              <Button
+                data-variant="link"
+                onclick={() => navigate({ pageName: "list", saved: b.id, q: "" })}>{b.name}</Button
+              >
+              {#if describe(b)}<span class="small muted mono saved search-desc">{describe(b)}</span
+                >{/if}
+            </div>
+            <span class="row-actions">
+              <Button data-variant="ghost" class="edit-{b.id}" onclick={(e) => open(b, e)}
+                >Edit</Button
+              >
+              <Button
+                data-variant="ghost"
+                class="row-delete delete-{b.id}"
+                onclick={() => startDelete(b)}>Delete</Button
+              >
+            </span>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  {/if}
+</main>
+
+{#if editing !== undefined}
+  <SavedSearchEditor
+    savedSearch={editing}
+    suggestions={tagNames}
+    onsaved={saved}
+    onclose={closeEditor}
+  />
+{/if}
+
+{#if deleting}
+  <ConfirmDialog
+    title="Delete “{deleting.name}”?"
+    message="The saved search is removed. Bookmarks are not affected."
+    {busy}
+    error={deleteError}
+    onconfirm={() => deleting && doDelete(deleting)}
+    oncancel={cancelDelete}
+  />
+{/if}

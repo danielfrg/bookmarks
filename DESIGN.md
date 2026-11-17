@@ -5,21 +5,38 @@ consistent vocabulary instead of one-off styling.
 
 ## Component Rules
 
-- Theme and component styles come from the shared design system.
-- Import shared controls directly from `@kenn-io/kit-ui`; icons from `@lucide/svelte`.
-- Svelte 5 runes, typed props, callback props. Local components only for
-  app-specific behavior, not pass-through wrappers.
-- Inter for interface text; IBM Plex Mono for URLs, identifiers, and query syntax.
-  Load both from Google Fonts with `display=swap`.
-- Semantic theme tokens, default kit-ui control sizes, no Tailwind.
-- The extension uses the same theme files and kit-ui.
+- The look comes from the shared design system (Cadence theme), synced into
+  `frontend/src/design-system/` (`theme/`, plus the `table` and `theme-toggle`
+  components). That folder is never edited by hand: change it in the
+  design-system repo and run `pnpm sync` there.
+- Controls are `@ui-sdk/svelte` components (pinned exact, with `@ui-sdk/core`).
+  Dialogs use `Dialog`/`AlertDialog`, file uploads use `FileInput`. ui-sdk has no
+  Table, EmptyState or ThemeToggle: the table and toggle are shared, EmptyState,
+  Spinner, Modal, Markdown and the like are small local components in
+  `src/lib/components`. Icons from `@lucide/svelte`.
+- `main.ts` imports the synced design-system CSS first, then `app.css` last, so app
+  rules win ties with the theme (the extension's `lib/boot.ts` does the same). Prefer
+  tokens and class selectors over `!important`.
+- `app.css` starts with `@layer ui-sdk;` and holds only layout and app-specific
+  pieces. It may adjust a control's layout (width, spacing), never its look. Use
+  tokens (`--ink`, `--muted`, `--line`, `--space-*`, `--radius-*`, `--mono`).
+  The theme has no global reset, so `app.css` sets `box-sizing` and `body` margin.
+- Style custom wrappers with a class, not `data-slot` (ui-sdk's Button always sets
+  `data-slot="button"`). Fields default to 20rem wide; set widths in `app.css`.
+  A panel gets a 1px border or `--shadow-1`, never both; use `--shadow-drop`.
+- Svelte 5 runes, typed props, callback props. No Tailwind.
+- The theme's system font stack for the interface and its `--mono` for URLs,
+  identifiers and query syntax. No web fonts are loaded and no font files are embedded.
+- The extension uses the same Cadence theme, synced into `extension/src/design-system/`
+  (it has no CSP-allowed inline script, so `lib/boot.ts` sets the saved scheme before mount).
 
 ## Appearance and Accessibility
 
-Start in dark mode; respect explicit light or system preferences via `initTheme`
-with the app's own storage key. Keep focus visible, controls labeled, and
-reduced-motion preferences respected. Phone layouts must not widen the page.
-Preserve `scrollbar-gutter: stable`.
+Start in dark mode; a saved light, dark or system choice wins. The shared
+`color-scheme` localStorage key is managed by `src/lib/color-scheme.ts` and the
+synced `ThemeToggle`; a Vite plugin applies it before the app loads. Keep focus
+visible, controls labeled, and reduced-motion preferences respected. Phone
+layouts must not widen the page. Preserve `scrollbar-gutter: stable`.
 
 ## Application Patterns
 
