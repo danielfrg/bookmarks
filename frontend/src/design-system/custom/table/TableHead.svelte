@@ -17,7 +17,13 @@
   const table = getTableState();
   const direction = $derived(sortKey && table?.sort?.key === sortKey ? table.sort.direction : null);
   const ariaSort = $derived(
-    sortKey ? (direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none") : undefined,
+    sortKey
+      ? direction === "asc"
+        ? "ascending"
+        : direction === "desc"
+          ? "descending"
+          : "none"
+      : undefined,
   );
 </script>
 
