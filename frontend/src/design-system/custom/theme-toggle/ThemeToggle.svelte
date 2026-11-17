@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { tick } from "svelte";
   import type { ColorSchemeValue } from "@ui-sdk/core";
   import { Button } from "@ui-sdk/svelte/button";
   import { usePreference } from "@ui-sdk/svelte/preferences";
@@ -20,19 +19,8 @@
   const current = $derived(scheme.current.value);
   const next = $derived(order[(order.indexOf(current) + 1) % order.length]);
 
-  // The new scheme is revealed through a circle growing from the bottom-right corner of the
-  // screen (the animation is in theme-toggle.css). Without View Transitions, or with reduced
-  // motion, it switches at once.
-  async function change() {
-    const apply = async () => {
-      colorScheme.set(next);
-      await tick();
-    };
-    const instant =
-      typeof document.startViewTransition !== "function" ||
-      matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (instant) await apply();
-    else document.startViewTransition(apply);
+  function change() {
+    colorScheme.set(next);
   }
 </script>
 

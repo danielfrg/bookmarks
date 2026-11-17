@@ -11,6 +11,4 @@
   let { name, on, title, onclick }: Props = $props();
 </script>
 
-<Button class="tag" data-variant="ghost" data-size="sm" aria-pressed={on} {title} {onclick}
-  >#{name}</Button
->
+<Button class="tag" data-variant="link" aria-pressed={on} {title} {onclick}>#{name}</Button>

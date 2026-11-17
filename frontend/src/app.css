@@ -280,9 +280,6 @@ a {
   font-family: var(--mono);
   font-size: 11px;
 }
-.badge.good {
-  color: var(--accent);
-}
 .actions {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1090,4 +1087,61 @@ kbd {
   .bm {
     padding-inline: var(--space-3);
   }
+}
+
+/* Row title: a small arrow marks that the link leaves the app. */
+.bm-title a svg {
+  width: 12px;
+  height: 12px;
+  margin-inline-start: 6px;
+  color: var(--muted);
+  vertical-align: -1px;
+}
+
+/* Quiet row delete: looks like its neighbors, turns red on hover. */
+[data-slot="button"].row-delete:hover:not(:disabled) {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+/* Tags read as links: accent text, underlined on hover, bold and underlined when on. */
+[data-slot="button"].tag[data-variant="link"] {
+  display: inline;
+  height: auto;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--accent);
+  font-weight: 400;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+[data-slot="button"].tag[data-variant="link"]:hover:not(:disabled),
+[data-slot="button"].tag[data-variant="link"][aria-pressed="true"] {
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+[data-slot="button"].tag[data-variant="link"][aria-pressed="true"] {
+  font-weight: 600;
+}
+.group .tag {
+  margin-inline-end: var(--space-2);
+}
+
+/* Select mode toggle and side panel: no outline ring, the fill alone carries the state. */
+[data-slot="toggle"].select-trigger[aria-pressed="true"],
+[data-slot="button"].saved-item {
+  box-shadow: none;
+}
+[data-slot="toggle"].select-trigger:focus-visible {
+  outline-color: var(--fill);
+}
+
+/* The select checkbox lines up with the favicon square beside it. */
+.bm .sel {
+  display: flex;
+  margin-top: 3px;
 }

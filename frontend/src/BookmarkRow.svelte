@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ExternalLinkIcon } from "@lucide/svelte";
   import { Button } from "@ui-sdk/svelte/button";
   import TagButton from "$lib/components/TagButton.svelte";
   import CheckField from "$lib/components/CheckField.svelte";
@@ -61,7 +62,7 @@
     <div class="bm-title">
       {#if b.unread}<span class="dot" title="Unread" role="img" aria-label="Unread"></span>{/if}
       <a href={b.url} target="_blank" rel="noopener noreferrer" class:untitled={!b.title.trim()}>
-        {displayTitle(b)}
+        {displayTitle(b)}<ExternalLinkIcon aria-hidden="true" />
       </a>
     </div>
     {#if b.description}<p class="bm-desc">{b.description}</p>{/if}
@@ -77,8 +78,6 @@
       <span class="date" title={formatTimestamp(b.date_added)}
         >{formatRelativeTime(b.date_added)}</span
       >
-      {#if b.archive_count > 0 && !b.basic_capture_only}<span class="badge good">archived</span
-        >{/if}
       {#if b.basic_capture_only}<span class="badge">basic capture</span>{/if}
       <div class="actions">
         {#if b.latest_archive_url}
@@ -91,7 +90,7 @@
                 {...props}
                 href={b.latest_archive_url}
                 target="_blank"
-                rel="noopener">View</a
+                rel="noopener">View archive</a
               >{/snippet}
           </Button>
         {/if}
@@ -119,7 +118,8 @@
           >
         {/if}
         <Button
-          data-variant="destructive"
+          class="row-delete"
+          data-variant="ghost"
           data-size="sm"
           aria-label="Delete {displayTitle(b)}"
           disabled={busy}
