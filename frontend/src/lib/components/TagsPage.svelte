@@ -12,11 +12,11 @@
     TableHead,
     TableHeader,
     TableRow,
-  } from "./design-system/custom/table";
+  } from "../../design-system/custom/table";
   import { tick } from "svelte";
-  import { api, type Tag } from "./lib/api.ts";
-  import { filterTags, normalizeTagName, wouldMerge } from "./lib/pages.ts";
-  import { navigate } from "./lib/view.ts";
+  import { api, type Tag } from "../api.ts";
+  import { filterTags, normalizeTagName, wouldMerge } from "../pages.ts";
+  import { navigate } from "../view.ts";
   import ConfirmDialog from "./ConfirmDialog.svelte";
   import PageHeader from "./PageHeader.svelte";
 

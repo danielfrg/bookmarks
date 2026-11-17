@@ -17,15 +17,15 @@
   import SettingsSection from "$lib/components/SettingsSection.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
   import SwitchField from "$lib/components/SwitchField.svelte";
-  import { api, type Settings } from "./lib/api.ts";
+  import { api, type Settings } from "../api.ts";
   import {
     clampItemsPerPage,
     mergeSettings,
     type SettingsPatch,
     DEFAULT_ITEMS_PER_PAGE,
     importSummary,
-  } from "./lib/pages.ts";
-  import { navigate, type SettingsSection as SectionId } from "./lib/view.ts";
+  } from "../pages.ts";
+  import { navigate, type SettingsSection as SectionId } from "../view.ts";
   import TokensSection from "./TokensSection.svelte";
   import PageHeader from "./PageHeader.svelte";
 

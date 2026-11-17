@@ -4,9 +4,9 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
   import { tick } from "svelte";
-  import { api, type SavedSearch } from "./lib/api.ts";
-  import { byOrder, moveItem } from "./lib/pages.ts";
-  import { navigate } from "./lib/view.ts";
+  import { api, type SavedSearch } from "../api.ts";
+  import { byOrder, moveItem } from "../pages.ts";
+  import { navigate } from "../view.ts";
   import ConfirmDialog from "./ConfirmDialog.svelte";
   import SavedSearchEditor from "./SavedSearchEditor.svelte";
   import PageHeader from "./PageHeader.svelte";

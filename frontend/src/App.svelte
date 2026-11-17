@@ -13,16 +13,16 @@
   import { colorScheme } from "$lib/color-scheme";
   import { toggleTagInQuery } from "./lib/query.ts";
   import { listParams, navigate, readView } from "./lib/view.ts";
-  import DetailsModal from "./DetailsModal.svelte";
-  import EditModal from "./EditModal.svelte";
-  import ReaderPage from "./ReaderPage.svelte";
-  import BookmarkList from "./BookmarkList.svelte";
-  import SavedSearchesPage from "./SavedSearchesPage.svelte";
-  import SettingsPage from "./SettingsPage.svelte";
-  import TagsPage from "./TagsPage.svelte";
-  import SidePanel from "./SidePanel.svelte";
-  import TopBar from "./TopBar.svelte";
-  import ShortcutsModal from "./ShortcutsModal.svelte";
+  import DetailsModal from "./lib/components/DetailsModal.svelte";
+  import EditModal from "./lib/components/EditModal.svelte";
+  import ReaderPage from "./lib/components/ReaderPage.svelte";
+  import BookmarkList from "./lib/components/BookmarkList.svelte";
+  import SavedSearchesPage from "./lib/components/SavedSearchesPage.svelte";
+  import SettingsPage from "./lib/components/SettingsPage.svelte";
+  import TagsPage from "./lib/components/TagsPage.svelte";
+  import SidePanel from "./lib/components/SidePanel.svelte";
+  import TopBar from "./lib/components/TopBar.svelte";
+  import ShortcutsModal from "./lib/components/ShortcutsModal.svelte";
 
   let view = $state(readView(new URL(window.location.href)));
   let pageSize = $state(30);

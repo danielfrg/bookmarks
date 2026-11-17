@@ -14,6 +14,9 @@ consistent vocabulary instead of one-off styling.
   Table, EmptyState or ThemeToggle: the table and toggle are shared, EmptyState,
   Spinner, Modal, Markdown and the like are small local components in
   `src/lib/components`. Icons from `@lucide/svelte`.
+- `main.ts` imports the synced design-system CSS first, then `app.css` last, so app
+  rules win ties with the theme (the extension's `lib/boot.ts` does the same). Prefer
+  tokens and class selectors over `!important`.
 - `app.css` starts with `@layer ui-sdk;` and holds only layout and app-specific
   pieces. It may adjust a control's layout (width, spacing), never its look. Use
   tokens (`--ink`, `--muted`, `--line`, `--space-*`, `--radius-*`, `--mono`).

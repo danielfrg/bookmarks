@@ -5,10 +5,10 @@
   import CheckField from "$lib/components/CheckField.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
-  import { api, type Bookmark, type BulkAction } from "./lib/api.ts";
-  import { activeTagsOf, bulkRequest, displayTitle } from "./lib/query.ts";
-  import { shortcutFor } from "./lib/keys.ts";
-  import { navigate, type View } from "./lib/view.ts";
+  import { api, type Bookmark, type BulkAction } from "../api.ts";
+  import { activeTagsOf, bulkRequest, displayTitle } from "../query.ts";
+  import { shortcutFor } from "../keys.ts";
+  import { navigate, type View } from "../view.ts";
   import BookmarkRow from "./BookmarkRow.svelte";
   import BulkBar from "./BulkBar.svelte";
   import ConfirmDialog from "./ConfirmDialog.svelte";

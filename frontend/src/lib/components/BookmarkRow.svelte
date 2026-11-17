@@ -3,9 +3,9 @@
   import { Button } from "@ui-sdk/svelte/button";
   import TagButton from "$lib/components/TagButton.svelte";
   import CheckField from "$lib/components/CheckField.svelte";
-  import { formatRelativeTime, formatTimestamp } from "./lib/format.ts";
-  import type { Bookmark } from "./lib/api.ts";
-  import { displayTitle, hostOf } from "./lib/query.ts";
+  import { formatRelativeTime, formatTimestamp } from "../format.ts";
+  import type { Bookmark } from "../api.ts";
+  import { displayTitle, hostOf } from "../query.ts";
 
   interface Props {
     bookmark: Bookmark;

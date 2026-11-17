@@ -11,11 +11,11 @@ user facing, avoid big restructures.
 
 ## Architecture
 
-- `frontend/src/design-system/` and `extension/src/design-system/` are synced from the shared design system and is never edited by hand (change it there and run its sync); the Cadence theme and the ui-sdk components are described in `DESIGN.md`.
-- Go in `/cmd` and `/internal`; TypeScript + Svelte 5 in `/frontend`; the
-  extension (WXT + Svelte 5) in `/extension`.
+- `frontend/src/design-system/` and `extension/src/design-system/` are synced from the shared design system and are never edited by hand (change it there and run its sync); the Cadence theme and the ui-sdk components are described in `DESIGN.md`.
+- Go in `/cmd` and `/internal`; TypeScript + Svelte 5 in `/frontend` (components in
+  `frontend/src/lib/components`); the extension (WXT + Svelte 5) in `/extension`.
 
-## Vocabulary
+### Vocabulary
 
 - **Archive**: a saved full-page file (single-file HTML, PDF, or upload). Each
   has a source: `extension`, `server`, `upload`, or `import` (archives from a
@@ -41,3 +41,26 @@ user facing, avoid big restructures.
 - Agents get reader text (paged markdown), never raw archive HTML.
 - Server-side fetches must block non-public addresses.
 - Archive files live on disk (gzipped) in the data directory, not in the database.
+
+## Development
+
+Requires Go, Node and pnpm; use the `just` recipes:
+
+- `just install`: install the frontend dependencies.
+- `just api`: Go API on `127.0.0.1:8080` (serves the frontend embedded by the last `just build`).
+- `just frontend`: Vite dev server with HMR on `127.0.0.1:5173`, proxies the API.
+- `just check`: gofmt, vet, race tests, oxfmt/oxlint, frontend tests and svelte-check.
+- `just build`: build the frontend, embed it and build the single binary.
+- `just run`: build, then run the binary.
+- `just image-check`: build the Docker image and run `scripts/container-smoke.sh` against it.
+- Extension: `just ext-install`, `just ext-dev`, `just ext-build`, `just ext-zip`.
+
+## Frontend Conventions
+
+- Read `DESIGN.md` before changing the frontend.
+- `frontend/src/design-system/` is synced from the design-system repo with `pnpm sync`; never edit it.
+- `main.ts` imports the synced design-system CSS first, then `palette.css` if any, then
+  `app.css` last, so app rules win ties with the theme; prefer tokens and class selectors
+  over `!important`. `app.css` keeps `@layer ui-sdk;` as its first statement. This app has no
+  `palette.css`; the extension's `lib/boot.ts` follows the same order.
+- Components live in `frontend/src/lib/components`; `App.svelte` stays at the top of `frontend/src`.

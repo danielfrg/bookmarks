@@ -10,8 +10,8 @@
   import Modal from "$lib/components/Modal.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
   import { untrack } from "svelte";
-  import { api, type SavedSearch } from "./lib/api.ts";
-  import { commitTagText } from "./lib/query.ts";
+  import { api, type SavedSearch } from "../api.ts";
+  import { commitTagText } from "../query.ts";
   import TagInput from "./TagInput.svelte";
 
   interface Props {

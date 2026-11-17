@@ -3,12 +3,12 @@
   import { Button } from "@ui-sdk/svelte/button";
   import Markdown from "$lib/components/Markdown.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
-  import { formatRelativeTime } from "./lib/format.ts";
+  import { formatRelativeTime } from "../format.ts";
   import { onMount, tick } from "svelte";
-  import { api, ApiError, type Archive, type Bookmark, type ReaderPage } from "./lib/api.ts";
-  import { displayTitle, hostOf } from "./lib/query.ts";
-  import { READER_PAGE_CHARS, joinChunks } from "./lib/reader.ts";
-  import { navigate, readView, writeView } from "./lib/view.ts";
+  import { api, ApiError, type Archive, type Bookmark, type ReaderPage } from "../api.ts";
+  import { displayTitle, hostOf } from "../query.ts";
+  import { READER_PAGE_CHARS, joinChunks } from "../reader.ts";
+  import { navigate, readView, writeView } from "../view.ts";
 
   interface Props {
     id: number;

@@ -18,10 +18,10 @@
     SelectValue,
   } from "@ui-sdk/svelte/select";
   import { Toggle } from "@ui-sdk/svelte/toggle";
-  import { ThemeToggle } from "./design-system/custom/theme-toggle";
+  import { ThemeToggle } from "../../design-system/custom/theme-toggle";
   import { colorScheme } from "$lib/color-scheme";
-  import { syncSearchText } from "./lib/query.ts";
-  import { navigate, type Filter, type View } from "./lib/view.ts";
+  import { syncSearchText } from "../query.ts";
+  import { navigate, type Filter, type View } from "../view.ts";
 
   interface Props {
     view: View;

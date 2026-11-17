@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { SavedSearch, Tag } from "./lib/api.ts";
-  import { activeTagsOf, groupTags } from "./lib/query.ts";
+  import type { SavedSearch, Tag } from "../api.ts";
+  import { activeTagsOf, groupTags } from "../query.ts";
   import { Button } from "@ui-sdk/svelte/button";
   import TagButton from "$lib/components/TagButton.svelte";
-  import { navigate, type View } from "./lib/view.ts";
+  import { navigate, type View } from "../view.ts";
 
   interface Props {
     view: View;

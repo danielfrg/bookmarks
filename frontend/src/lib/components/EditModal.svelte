@@ -6,11 +6,11 @@
   import CheckField from "$lib/components/CheckField.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
-  import { formatTimestamp } from "./lib/format.ts";
+  import { formatTimestamp } from "../format.ts";
   import { tick, untrack } from "svelte";
-  import { api, ApiError, type Bookmark, type CheckResult, type SaveInput } from "./lib/api.ts";
-  import { commitTagText } from "./lib/query.ts";
-  import { navigate } from "./lib/view.ts";
+  import { api, ApiError, type Bookmark, type CheckResult, type SaveInput } from "../api.ts";
+  import { commitTagText } from "../query.ts";
+  import { navigate } from "../view.ts";
   import TagInput from "./TagInput.svelte";
 
   interface Props {

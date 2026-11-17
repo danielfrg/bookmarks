@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "@ui-sdk/svelte/button";
-  import type { BulkAction } from "./lib/api.ts";
-  import { commitTagText } from "./lib/query.ts";
+  import type { BulkAction } from "../api.ts";
+  import { commitTagText } from "../query.ts";
   import TagInput from "./TagInput.svelte";
 
   interface Props {

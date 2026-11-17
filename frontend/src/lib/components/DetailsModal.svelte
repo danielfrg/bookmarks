@@ -7,11 +7,11 @@
   import Modal from "$lib/components/Modal.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
   import SwitchField from "$lib/components/SwitchField.svelte";
-  import { formatRelativeTime, formatTimestamp } from "./lib/format.ts";
+  import { formatRelativeTime, formatTimestamp } from "../format.ts";
   import { tick } from "svelte";
-  import { api, ApiError, type Archive, type Bookmark, type ReaderPage } from "./lib/api.ts";
-  import { displayTitle, formatBytes } from "./lib/query.ts";
-  import { navigate } from "./lib/view.ts";
+  import { api, ApiError, type Archive, type Bookmark, type ReaderPage } from "../api.ts";
+  import { displayTitle, formatBytes } from "../query.ts";
+  import { navigate } from "../view.ts";
 
   interface Props {
     id: number;

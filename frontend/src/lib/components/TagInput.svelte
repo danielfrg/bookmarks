@@ -1,7 +1,7 @@
 <script lang="ts">
   import { XIcon } from "@lucide/svelte";
   import { Button } from "@ui-sdk/svelte/button";
-  import { commitTagText } from "./lib/query.ts";
+  import { commitTagText } from "../query.ts";
 
   interface Props {
     /** Committed tags (bindable). */

@@ -9,9 +9,9 @@
   import Modal from "$lib/components/Modal.svelte";
   import SettingsSection from "$lib/components/SettingsSection.svelte";
   import Spinner from "$lib/components/Spinner.svelte";
-  import { formatRelativeTime, formatTimestamp } from "./lib/format.ts";
+  import { formatRelativeTime, formatTimestamp } from "../format.ts";
   import { onMount, tick } from "svelte";
-  import { api, type ApiToken, type CreatedApiToken } from "./lib/api.ts";
+  import { api, type ApiToken, type CreatedApiToken } from "../api.ts";
   import ConfirmDialog from "./ConfirmDialog.svelte";
 
   const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
