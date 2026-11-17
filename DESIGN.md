@@ -22,8 +22,8 @@ consistent vocabulary instead of one-off styling.
   `data-slot="button"`). Fields default to 20rem wide; set widths in `app.css`.
   A panel gets a 1px border or `--shadow-1`, never both; use `--shadow-drop`.
 - Svelte 5 runes, typed props, callback props. No Tailwind.
-- Inter from Google Fonts (`display=swap`) for the interface; the theme's `--mono`
-  for URLs, identifiers and query syntax. No font files are embedded.
+- The theme's system font stack for the interface and its `--mono` for URLs,
+  identifiers and query syntax. No web fonts are loaded and no font files are embedded.
 - The extension has its own theme files and is not part of this migration.
 
 ## Appearance and Accessibility
